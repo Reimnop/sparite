@@ -117,7 +117,9 @@
 	}
 </script>
 
-<SpariteForm onSubmit={handleSubmit} />
+<div class="w-full min-h-screen flex flex-col p-8 items-center">
+	<SpariteForm class="max-w-120 w-full" onSubmit={handleSubmit} />
+</div>
 
 {#if prefabString}
 	<h2 class="mt-8 text-lg font-bold">Generated Prefab JSON:</h2>
