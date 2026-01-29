@@ -47,8 +47,8 @@
   </label>
 
   <label>
-    Size
-    <input type="number" name={FormName.Size} min="0" value="10">
+    Pixels per unit
+    <input type="number" name={FormName.PixelsPerUnit} min="0" value="8">
   </label>
 
   <label>

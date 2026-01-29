@@ -2,7 +2,7 @@ export enum FormName {
   PrefabName = "prefab-name",
   PrefabType = "prefab-type",
   PrefabDescription = "prefab-description",
-  Size = "size",
+  PixelsPerUnit = "pixels-per-unit",
   Lifetime = "lifetime",
   Depth = "depth",
   HorizontalAlignment = "horizontal-alignment",

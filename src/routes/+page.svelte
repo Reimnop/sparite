@@ -23,7 +23,7 @@
 		const prefabName = formData.get(FormName.PrefabName) as string;
 		const prefabDescription = formData.get(FormName.PrefabDescription) as string;
 		const prefabType = parseInt(formData.get(FormName.PrefabType) as string, 10) as PrefabType;
-		const size = parseInt(formData.get(FormName.Size) as string, 10);
+		const pixelsPerUnit = parseInt(formData.get(FormName.PixelsPerUnit) as string, 10);
 		const lifetime = parseInt(formData.get(FormName.Lifetime) as string, 10);
 		const depth = parseInt(formData.get(FormName.Depth) as string, 20);
 		const horizontalAlignment = formData.get(FormName.HorizontalAlignment) as Alignment;
@@ -32,7 +32,7 @@
 		const imageFile = formData.get(FormName.ImageFile) as File;
 
 		const result = await generatePAImage(imageFile);
-		transformGenerationResult(result, size, horizontalAlignment, verticalAlignment);
+		transformGenerationResult(result, pixelsPerUnit, horizontalAlignment, verticalAlignment);
 
 		const prefab = createPrefab(prefabName, prefabDescription, prefabType, lifetime, depth, useHitObjects, result.rects, Date.now());
 
@@ -84,8 +84,8 @@
 		});
 	}
 
-	function transformGenerationResult(result: GenerationResult, size: number, horizontalAlignment: Alignment, verticalAlignment: Alignment) {
-		const scaleFactor = size / Math.max(result.width, result.height);
+	function transformGenerationResult(result: GenerationResult, pixelsPerUnit: number, horizontalAlignment: Alignment, verticalAlignment: Alignment) {
+		const scaleFactor = 1 / pixelsPerUnit; // the generator assumes 1 ppu, so scale accordingly
 		const offsetX = computeXOffset(result.width * scaleFactor, horizontalAlignment);
 		const offsetY = computeYOffset(result.height * scaleFactor, verticalAlignment);
 		for (const rect of result.rects) {
