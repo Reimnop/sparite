@@ -1,31 +1,35 @@
 /* form */
 form {
-  @apply flex flex-col gap-2;
+	@apply flex flex-col gap-2;
 }
 
 label {
-  @apply text-sm flex flex-col gap-1;
+	@apply flex flex-col gap-1 text-sm;
 }
 
 /* text input */
-input[type="text"], input[type="number"], textarea {
-  @apply shadow-foreground rounded-md px-2 py-1 bg-background-dark text-foreground outline-none!;
+input[type='text'],
+input[type='number'],
+textarea {
+	@apply bg-background-dark rounded-md px-2 py-1 text-foreground shadow-foreground outline-none!;
 }
 
-input[type="text"]:focus, input[type="number"]:focus, textarea:focus {
-  @apply shadow-[0_2px_0];
+input[type='text']:focus,
+input[type='number']:focus,
+textarea:focus {
+	@apply shadow-[0_2px_0];
 }
 
 /* select */
 select {
-  @apply shadow-foreground rounded-md px-2 py-1 bg-background-dark text-foreground text-base;
+	@apply bg-background-dark rounded-md px-2 py-1 text-base text-foreground shadow-foreground;
 }
 
 select:focus {
-  @apply shadow-[0_2px_0];
+	@apply shadow-[0_2px_0];
 }
 
 /* button */
 button {
-  @apply cursor-pointer bg-background-dark rounded-md px-2 py-1 text-foreground outline outline-foreground;
+	@apply bg-background-dark cursor-pointer rounded-md px-2 py-1 text-foreground outline outline-foreground;
 }
