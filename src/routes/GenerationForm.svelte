@@ -157,13 +157,13 @@
       </Field.Group>
 
       <Field.Field orientation="horizontal">
-        <Switch id="use-hit-objects" name={FormName.UseHitObjects} />
-        <Field.Label for="use-hit-objects">Use Hit Objects</Field.Label>
+        <Switch class="cursor-pointer" id="use-hit-objects" name={FormName.UseHitObjects} />
+        <Field.Label class="cursor-pointer" for="use-hit-objects">Use Hit Objects</Field.Label>
       </Field.Field>
 
       <Field.Field>
         <Field.Label>Image File</Field.Label>
-        <Input type="file" name={FormName.ImageFile} />
+        <Input class="cursor-pointer" type="file" name={FormName.ImageFile} />
       </Field.Field>
 
       <Field.Field>
