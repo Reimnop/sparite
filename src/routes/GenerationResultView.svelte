@@ -46,10 +46,8 @@
     <div class="h-12 relative">
       {#if color}
         <Button variant="outline" class="justify-start w-full cursor-pointer absolute top-1/2 -translate-y-1/2" onclick={() => copyToClipboard(getColorHex(color.color))}>
-          <div class="flex -ml-2 gap-2">
-            <div class="w-6 h-6 border border-muted-foreground/50 rounded-sm" style="background-color: {getColorHex(color.color)};"></div>
-            <span>{getColorHex(color.color)}</span>
-          </div>
+          <div class="-ml-2 w-6 h-6 border border-muted-foreground/50 rounded-sm" style="background-color: {getColorHex(color.color)};"></div>
+          <span>{getColorHex(color.color)}</span>
         </Button>
       {:else}
         <img class="left-2 absolute top-1/2 -translate-y-1/2 w-6 h-6 rounded-sm border border-muted-foreground/50 bg-transparent" src={NoColor} alt="No color" />
