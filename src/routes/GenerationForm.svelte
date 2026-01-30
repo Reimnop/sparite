@@ -10,6 +10,20 @@
   import { Textarea } from "$lib/components/ui/textarea";
   import { Alignment } from "$lib/Alignment";
   import type { GenerationFormData } from "./GenerationFormData";
+  import IconRadioGroupItem from "./IconRadioGroupItem.svelte";
+
+  import LeftUnchecked from "$lib/icons/alignment/left-unchecked.svg";
+  import LeftChecked from "$lib/icons/alignment/left-checked.svg";
+  import CenterUnchecked from "$lib/icons/alignment/center-unchecked.svg";
+  import CenterChecked from "$lib/icons/alignment/center-checked.svg";
+  import RightUnchecked from "$lib/icons/alignment/right-unchecked.svg";
+  import RightChecked from "$lib/icons/alignment/right-checked.svg";
+  import TopUnchecked from "$lib/icons/alignment/top-unchecked.svg";
+  import TopChecked from "$lib/icons/alignment/top-checked.svg";
+  import MiddleUnchecked from "$lib/icons/alignment/middle-unchecked.svg";
+  import MiddleChecked from "$lib/icons/alignment/middle-checked.svg";
+  import BottomUnchecked from "$lib/icons/alignment/bottom-unchecked.svg";
+  import BottomChecked from "$lib/icons/alignment/bottom-checked.svg";
 
   const prefabTypeNames: Record<PrefabType, string> = {
     [PrefabType.Character]: "Character",
@@ -126,18 +140,18 @@
       <Field.Group class="grid gap-2 sm:grid-cols-2">
         <Field.Set>
           <Field.Label>Horizontal Alignment</Field.Label>
-          <RadioGroup.Root name={FormName.HorizontalAlignment} bind:value={currentHorizontalAlignment}>
-            <RadioGroup.Item value={Alignment.Left} />
-            <RadioGroup.Item value={Alignment.Center} />
-            <RadioGroup.Item value={Alignment.Right} />
+          <RadioGroup.Root class="grid grid-cols-3 gap-2 w-fit" name={FormName.HorizontalAlignment} bind:value={currentHorizontalAlignment}>
+            <IconRadioGroupItem class="cursor-pointer w-6 h-6" checkedIcon={LeftChecked} uncheckedIcon={LeftUnchecked} value={Alignment.Left} />
+            <IconRadioGroupItem class="cursor-pointer w-6 h-6" checkedIcon={CenterChecked} uncheckedIcon={CenterUnchecked} value={Alignment.Center} />
+            <IconRadioGroupItem class="cursor-pointer w-6 h-6" checkedIcon={RightChecked} uncheckedIcon={RightUnchecked} value={Alignment.Right} />
           </RadioGroup.Root>
         </Field.Set>
         <Field.Set>
           <Field.Label>Vertical Alignment</Field.Label>
-          <RadioGroup.Root name={FormName.VerticalAlignment} bind:value={currentVerticalAlignment}>
-            <RadioGroup.Item value={Alignment.Top} />
-            <RadioGroup.Item value={Alignment.Middle} />
-            <RadioGroup.Item value={Alignment.Bottom} />
+          <RadioGroup.Root class="grid grid-cols-3 gap-2 w-fit" name={FormName.VerticalAlignment} bind:value={currentVerticalAlignment}>
+            <IconRadioGroupItem class="cursor-pointer w-6 h-6" checkedIcon={TopChecked} uncheckedIcon={TopUnchecked} value={Alignment.Top} />
+            <IconRadioGroupItem class="cursor-pointer w-6 h-6" checkedIcon={MiddleChecked} uncheckedIcon={MiddleUnchecked} value={Alignment.Middle} />
+            <IconRadioGroupItem class="cursor-pointer w-6 h-6" checkedIcon={BottomChecked} uncheckedIcon={BottomUnchecked} value={Alignment.Bottom} />
           </RadioGroup.Root>
         </Field.Set>
       </Field.Group>
@@ -153,7 +167,7 @@
       </Field.Field>
 
       <Field.Field>
-        <Button type="submit">Generate</Button>
+        <Button class="cursor-pointer" type="submit">Generate</Button>
       </Field.Field>
     </Field.Group>
   </Field.Set>

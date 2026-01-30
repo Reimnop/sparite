@@ -1,10 +1,15 @@
 <script lang="ts">
   import { getColorHex, type ColorRgb } from "$lib/algo/Color";
   import Button from "$lib/components/ui/button/button.svelte";
-    import { onMount } from "svelte";
+  import { onMount } from "svelte";
   import type { GenerationResult } from "./GenerationResult";
 
-  type ThemeColor = ColorRgb | null;
+  import NoColor from "$lib/icons/no-color.svg"
+
+  interface ThemeColor {
+    index: number;
+    color: ColorRgb;
+  }
 
   interface Props {
     result: GenerationResult;
@@ -14,12 +19,12 @@
     result 
   } : Props = $props();
 
-  let colors: ThemeColor[] = $state([]);
+  let colors: (ThemeColor | null)[] = $state([]);
 
   onMount(() => {
     let i = 0;
     for (; i < result.palette.length; i++) {
-      colors.push(result.palette[i]);
+      colors.push({ index: i, color: result.palette[i] });
     }
     for (; i < 9; i++) {
       colors.push(null);
@@ -40,17 +45,14 @@
   {#each colors as color}
     <div class="h-12 flex flex-col justify-center">
       {#if color}
-        <Button variant="outline" class="justify-start" onclick={() => copyToClipboard(getColorHex(color))}>
+        <Button variant="outline" class="justify-start" onclick={() => copyToClipboard(getColorHex(color.color))}>
           <div class="flex -ml-2 gap-2">
-            <div class="w-5 h-5 rounded-sm" style="background-color: {getColorHex(color)};"></div>
-            <span>{getColorHex(color)}</span>
+            <div class="w-6 h-6 border border-muted-foreground/50 rounded-sm" style="background-color: {getColorHex(color.color)};"></div>
+            <span>{getColorHex(color.color)}</span>
           </div>
       </Button>
       {:else}
-        <div class="flex items-center gap-2 text-muted-foreground">
-          <div class="w-5 h-5 rounded-sm border border-muted-foreground/50 bg-transparent"></div>
-          <span>--</span>
-        </div>
+        <img class="ml-2 w-6 h-6 rounded-sm border border-muted-foreground/50 bg-transparent" src={NoColor} alt="No color" />
       {/if}
     </div>
   {/each}
