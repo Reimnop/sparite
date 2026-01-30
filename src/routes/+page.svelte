@@ -9,7 +9,7 @@
   import type { GenerationResult } from "./GenerationResult";
   import type { ColoredRect } from "$lib/algo/Rect";
   import GenerationResultView from "./GenerationResultView.svelte";
-    import Separator from "$lib/components/ui/separator/separator.svelte";
+  import Separator from "$lib/components/ui/separator/separator.svelte";
 
   interface RectImage {
     rects: ColoredRect[];

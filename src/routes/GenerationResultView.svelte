@@ -41,18 +41,18 @@
   <p class="text-sm text-muted-foreground">{result.prefabDescription}</p>
 </div>
 
-<div class="flex flex-col">
+<div>
   {#each colors as color}
-    <div class="h-12 flex flex-col justify-center">
+    <div class="h-12 relative">
       {#if color}
-        <Button variant="outline" class="justify-start" onclick={() => copyToClipboard(getColorHex(color.color))}>
+        <Button variant="outline" class="justify-start w-full cursor-pointer absolute top-1/2 -translate-y-1/2" onclick={() => copyToClipboard(getColorHex(color.color))}>
           <div class="flex -ml-2 gap-2">
             <div class="w-6 h-6 border border-muted-foreground/50 rounded-sm" style="background-color: {getColorHex(color.color)};"></div>
             <span>{getColorHex(color.color)}</span>
           </div>
-      </Button>
+        </Button>
       {:else}
-        <img class="ml-2 w-6 h-6 rounded-sm border border-muted-foreground/50 bg-transparent" src={NoColor} alt="No color" />
+        <img class="left-2 absolute top-1/2 -translate-y-1/2 w-6 h-6 rounded-sm border border-muted-foreground/50 bg-transparent" src={NoColor} alt="No color" />
       {/if}
     </div>
   {/each}
