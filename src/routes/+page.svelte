@@ -92,7 +92,7 @@
           data: imageData.data
         });
       };
-      
+
       image.onerror = (err) => {
         URL.revokeObjectURL(url); // free memory
 
@@ -139,30 +139,40 @@
   }
 </script>
 
-<div class="flex flex-col md:flex-row md:justify-center md:items-start min-h-screen w-full p-8 gap-8">
-  <Card.Root class="w-full md:max-w-md">
-    <Card.Header>
-      <Card.Title>Generation Info</Card.Title>
-      <Card.Description>Enter the details, upload your sprite and click Generate!</Card.Description>
-    </Card.Header>
-    <Card.Content>
-      <GenerationForm onSubmit={onFormSubmitted} />
-    </Card.Content>
-  </Card.Root>
-  <Card.Root class="w-full md:max-w-lg">
-    <Card.Header>
-      <Card.Title>Generated Prefab</Card.Title>
-      <Card.Description>Here is the prefab generated from your input.</Card.Description>
-      <Separator class="mt-4" />
-    </Card.Header>
-    <Card.Content>
-      {#key generationResult}
-        {#if generationResult}
-          <GenerationResultView result={generationResult} />
-        {:else}
-          <p class="text-center text-sm text-muted-foreground">Nothing here yet.</p>
-        {/if}
-      {/key}
-    </Card.Content>
-  </Card.Root>
+<div class="min-h-screen w-full flex flex-col">
+  <div class="flex flex-col md:flex-row md:justify-center md:items-start gap-8 p-8">
+    <Card.Root class="w-full md:max-w-md">
+      <Card.Header>
+        <Card.Title>Generation Info</Card.Title>
+        <Card.Description>Enter the details, upload your sprite and click Generate!</Card.Description>
+      </Card.Header>
+      <Card.Content>
+        <GenerationForm onSubmit={onFormSubmitted} />
+      </Card.Content>
+    </Card.Root>
+    <Card.Root class="w-full md:max-w-lg">
+      <Card.Header>
+        <Card.Title>Generated Prefab</Card.Title>
+        <Card.Description>Here is the prefab generated from your input.</Card.Description>
+        <Separator class="mt-4" />
+      </Card.Header>
+      <Card.Content>
+        {#key generationResult}
+          {#if generationResult}
+            <GenerationResultView result={generationResult} />
+          {:else}
+            <p class="text-center text-sm text-muted-foreground">Nothing here yet.</p>
+          {/if}
+        {/key}
+      </Card.Content>
+    </Card.Root>
+  </div>
+
+  <div class="mt-auto">
+    <Separator />
+    <p class="text-center text-sm text-muted-foreground py-4">
+      Sparite. Made by Reimnop and enchart.<br>
+      <a class="underline" href="https://github.com/Reimnop/sparite">Source code</a>
+    </p>
+  </div>
 </div>
