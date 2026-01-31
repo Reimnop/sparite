@@ -18,13 +18,14 @@ export function createPrefab(
 	depth: number,
 	hit: boolean,
 	coloredRects: ColoredRect[],
+	colorIndexMap: Map<number, number>,
 	seed: number
 ): Prefab {
 	return {
 		n: name,
 		description,
 		type,
-		objs: createPrefabObjects(lifetime, depth, hit, coloredRects, seed)
+		objs: createPrefabObjects(lifetime, depth, hit, coloredRects, colorIndexMap, seed)
 	};
 }
 
@@ -33,8 +34,8 @@ function createPrefabObjects(
 	depth: number,
 	hit: boolean,
 	coloredRects: ColoredRect[],
-	seed: number
-): PrefabObject[] {
+	colorIndexMap: Map<number, number>,
+	seed: number): PrefabObject[] {
 	const parentObject: PrefabObject = createPrefabObject(
 		generateId(0, seed),
 		null,
@@ -54,6 +55,12 @@ function createPrefabObjects(
 		const position: Vec2 = [rect.x, -rect.y];
 		const scale: Vec2 = [rect.width, rect.height];
 		const origin: PrefabObjectOrigin = { x: 0.5, y: -0.5 };
+
+		const colorIndex = colorIndexMap.get(rect.color.index);
+		if (colorIndex === undefined) {
+			throw new Error("Color index not found in map");
+		}
+		
 		return createPrefabObject(
 			id,
 			parentObject.id,
@@ -65,7 +72,10 @@ function createPrefabObjects(
 			depth,
 			position,
 			scale,
-			rect.color
+			{
+				index: colorIndex,
+				opacity: rect.color.opacity
+			}
 		);
 	});
 

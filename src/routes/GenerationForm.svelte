@@ -24,6 +24,7 @@
   import MiddleChecked from "$lib/icons/alignment/middle-checked.svg";
   import BottomUnchecked from "$lib/icons/alignment/bottom-unchecked.svg";
   import BottomChecked from "$lib/icons/alignment/bottom-checked.svg";
+    import Checkbox from "$lib/components/ui/checkbox/checkbox.svelte";
 
   const prefabTypeNames: Record<PrefabType, string> = {
     [PrefabType.Character]: "Character",
@@ -157,7 +158,7 @@
       </Field.Group>
 
       <Field.Field orientation="horizontal">
-        <Switch class="cursor-pointer" id="use-hit-objects" name={FormName.UseHitObjects} />
+        <Checkbox class="cursor-pointer" id="use-hit-objects" name={FormName.UseHitObjects} />
         <Field.Label class="cursor-pointer" for="use-hit-objects">Use Hit Objects</Field.Label>
       </Field.Field>
 

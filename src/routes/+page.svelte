@@ -64,26 +64,38 @@
 
   async function loadImage(imageFile: File): Promise<RawImage> {
     return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(imageFile);
+
       const image = new Image();
-      image.src = URL.createObjectURL(imageFile);
+      image.src = url;
       image.onload = () => {
+        URL.revokeObjectURL(url); // free memory
+
         const canvas = document.createElement("canvas");
         canvas.width = image.width;
         canvas.height = image.height;
+        
         const ctx = canvas.getContext("2d");
+
         if (!ctx) {
           reject(new Error("Failed to get canvas context"));
           return;
         }
+
         ctx.drawImage(image, 0, 0);
+
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
         resolve({
           width: image.width,
           height: image.height,
           data: imageData.data
         });
       };
+      
       image.onerror = (err) => {
+        URL.revokeObjectURL(url); // free memory
+
         reject(err);
       };
     });

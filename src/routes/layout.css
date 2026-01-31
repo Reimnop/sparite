@@ -5,6 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+	--font-sans: 'Geist', sans-serif;
 	--radius: 0.625rem;
 	--background: oklch(1 0 0);
 	--foreground: oklch(0.141 0.005 285.823);
@@ -74,6 +75,7 @@
 }
 
 @theme inline {
+	--font-sans: var(--font-sans);
 	--radius-sm: calc(var(--radius) - 4px);
 	--radius-md: calc(var(--radius) - 2px);
 	--radius-lg: var(--radius);
