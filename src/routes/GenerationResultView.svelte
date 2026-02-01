@@ -258,7 +258,7 @@
               class="-ml-2 h-6 w-6 rounded-sm border border-muted-foreground/50"
               style="background-color: {getColorHex(color.color)};"
             ></div>
-            <span>{getColorHex(color.color)}</span>
+            <span class="font-mono">{getColorHex(color.color)}</span>
           </Button>
         </div>
       {:else}
