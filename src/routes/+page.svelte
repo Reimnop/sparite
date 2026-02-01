@@ -1,34 +1,18 @@
 <script lang="ts">
   import * as Card from "$lib/components/ui/card";
-  import { Alignment } from "$lib/Alignment";
-  import type { ColorRgb } from "$lib/algo/Color";
   import { createIndexedImage, type RawImage } from "$lib/algo/IndexedImage";
   import { convertIndexedImageToColoredRects } from "$lib/algo/Processor";
   import type { GenerationFormData } from "./GenerationFormData";
   import GenerationForm from "./GenerationForm.svelte";
   import type { GenerationResult } from "./GenerationResult";
-  import type { ColoredRect } from "$lib/algo/Rect";
   import GenerationResultView from "./GenerationResultView.svelte";
   import Separator from "$lib/components/ui/separator/separator.svelte";
-
-  interface RectImage {
-    rects: ColoredRect[];
-    palette: ColorRgb[];
-    width: number;
-    height: number;
-  }
+  import type { RectImage } from "$lib/data/RectImage";
 
   let generationResult: GenerationResult | null = $state(null);
 
   async function onFormSubmitted(formData: GenerationFormData) {
     const rectImage = await generateRectImage(formData.imageFile);
-
-    transformRectImage(
-      rectImage,
-      formData.pixelsPerUnit,
-      formData.horizontalAlignment,
-      formData.verticalAlignment
-    );
 
     generationResult = {
       prefabName: formData.prefabName,
@@ -37,11 +21,10 @@
       pixelsPerUnit: formData.pixelsPerUnit,
       lifetime: formData.lifetime,
       depth: formData.depth,
+      horizontalAlignment: formData.horizontalAlignment,
+      verticalAlignment: formData.verticalAlignment,
       useHitObjects: formData.useHitObjects,
-      rects: rectImage.rects,
-      palette: rectImage.palette,
-      width: rectImage.width,
-      height: rectImage.height
+      rectImage: rectImage
     };
   }
 
@@ -99,43 +82,6 @@
         reject(err);
       };
     });
-  }
-
-  function transformRectImage(
-    rectImage: RectImage,
-    pixelsPerUnit: number,
-    horizontalAlignment: Alignment,
-    verticalAlignment: Alignment
-  ) {
-    const scaleFactor = 1 / pixelsPerUnit; // the generator assumes 1 ppu, so scale accordingly
-    const offsetX = computeXOffset(rectImage.width * scaleFactor, horizontalAlignment);
-    const offsetY = computeYOffset(rectImage.height * scaleFactor, verticalAlignment);
-    for (const rect of rectImage.rects) {
-      rect.x = rect.x * scaleFactor + offsetX;
-      rect.y = rect.y * scaleFactor + offsetY;
-      rect.width *= scaleFactor;
-      rect.height *= scaleFactor;
-    }
-  }
-
-  function computeXOffset(width: number, horizontalAlignment: Alignment) {
-    if (horizontalAlignment == Alignment.Left) {
-      return 0;
-    }
-    if (horizontalAlignment == Alignment.Center) {
-      return -width / 2;
-    }
-    return -width;
-  }
-
-  function computeYOffset(height: number, verticalAlignment: Alignment) {
-    if (verticalAlignment == Alignment.Top) {
-      return 0;
-    }
-    if (verticalAlignment == Alignment.Middle) {
-      return -height / 2;
-    }
-    return -height;
   }
 </script>
 

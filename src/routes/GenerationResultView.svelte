@@ -7,6 +7,9 @@
   import NoColor from "$lib/icons/no-color.svg";
   import { createPrefab } from "$lib/algo/VgpExport";
   import Separator from "$lib/components/ui/separator/separator.svelte";
+  import type { RectImage } from "$lib/data/RectImage";
+    import { Alignment } from "$lib/Alignment";
+    import type { ColoredRect } from "$lib/algo/Rect";
 
   interface ThemeColor {
     index: number;
@@ -18,20 +21,53 @@
   }
 
   let { result }: Props = $props();
+  let rectImage = $derived(result.rectImage);
 
   let colors: (ThemeColor | null)[] = $state([]);
 
   onMount(() => {
     let i = 0;
-    for (; i < result.palette.length; i++) {
-      colors.push({ index: i, color: result.palette[i] });
+    for (; i < rectImage.palette.length; i++) {
+      colors.push({ index: i, color: rectImage.palette[i] });
     }
     for (; i < 9; i++) {
       colors.push(null);
     }
   });
 
+  function drawGenerationOnCanvas(canvas: HTMLCanvasElement, rectImage: RectImage) {
+    const scaleFactor = 4; // scale up for better visibility
+
+    canvas.width = rectImage.width * scaleFactor;
+    canvas.height = rectImage.height * scaleFactor;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) 
+      return;
+
+    // clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // disable image smoothing
+    ctx.imageSmoothingEnabled = false;
+
+    // draw each rect
+    for (const rect of rectImage.rects) {
+      const color = rectImage.palette[rect.color.index];
+      ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${rect.color.opacity})`;
+      ctx.fillRect(rect.x * scaleFactor, rect.y * scaleFactor, rect.width * scaleFactor, rect.height * scaleFactor);
+    }
+  }
+
   function onDownloadButtonClicked() {
+    // transform rects according to ppu and alignment
+    const transformedRects = transformRects(
+      result.rectImage.rects,
+      result.pixelsPerUnit,
+      result.horizontalAlignment,
+      result.verticalAlignment
+    );
+
     const filename = `${normalizeFileName(result.prefabName)}.vgp`;
     const colorIndexMap = getColorIndexMap();
     const prefab = createPrefab(
@@ -41,7 +77,7 @@
       result.lifetime,
       result.depth,
       result.useHitObjects,
-      result.rects,
+      transformedRects,
       colorIndexMap,
       Date.now()
     );
@@ -49,6 +85,49 @@
     const textEncoder = new TextEncoder();
     const prefabData = textEncoder.encode(prefabJson);
     downloadData([prefabData], filename, "application/octet-stream");
+  }
+
+  function transformRects(
+    rects: ColoredRect[],
+    pixelsPerUnit: number,
+    horizontalAlignment: Alignment,
+    verticalAlignment: Alignment
+  ): ColoredRect[] {
+    const scaleFactor = 1 / pixelsPerUnit; // the generator assumes 1 ppu, so scale accordingly
+    const offsetX = computeXOffset(rectImage.width * scaleFactor, horizontalAlignment);
+    const offsetY = computeYOffset(rectImage.height * scaleFactor, verticalAlignment);
+
+    const result = rects.map((rect) => {
+      return {
+        x: rect.x * scaleFactor + offsetX,
+        y: rect.y * scaleFactor + offsetY,
+        width: rect.width * scaleFactor,
+        height: rect.height * scaleFactor,
+        color: rect.color
+      };
+    });
+
+    return result;
+  }
+
+  function computeXOffset(width: number, horizontalAlignment: Alignment) {
+    if (horizontalAlignment === Alignment.Left) {
+      return 0;
+    }
+    if (horizontalAlignment === Alignment.Center) {
+      return -width / 2;
+    }
+    return -width;
+  }
+
+  function computeYOffset(height: number, verticalAlignment: Alignment) {
+    if (verticalAlignment === Alignment.Top) {
+      return 0;
+    }
+    if (verticalAlignment === Alignment.Middle) {
+      return -height / 2;
+    }
+    return -height;
   }
 
   function getColorIndexMap(): Map<number, number> {
@@ -92,39 +171,45 @@
 <Separator class="my-4" />
 
 <div class="font-semibold">Prefab Info</div>
-<table class="text-sm text-muted-foreground">
-  <tbody>
-    <tr>
-      <td class="pr-4">Lifetime</td>
-      <td class="font-semibold">{result.lifetime}</td>
-    </tr>
-    <tr>
-      <td class="pr-4">Depth</td>
-      <td class="font-semibold">{result.depth}</td>
-    </tr>
-    <tr>
-      <td class="pr-4">Use Hit Objects</td>
-      <td class="font-semibold">{result.useHitObjects ? "Yes" : "No"}</td>
-    </tr>
-    <tr>
-      <td class="pr-4">Size</td>
-      <td class="font-semibold">{result.width} x {result.height} px</td>
-    </tr>
-    <tr>
-      <td class="pr-4">Color Count</td>
-      <td class="font-semibold">
-        {#if result.palette.length > 9}
-          ⚠️
-        {/if}
-        {result.palette.length}
-      </td>
-    </tr>
-    <tr>
-      <td class="pr-4">Object Count</td>
-      <td class="font-semibold">{result.rects.length}</td>
-    </tr>
-  </tbody>
-</table>
+<div class="flex gap-4 items-center">
+  <canvas
+    class="bg-transparent max-h-32 max-w-48 h-full"
+    use:drawGenerationOnCanvas={rectImage}></canvas>
+
+  <table class="text-sm text-muted-foreground">
+    <tbody>
+      <tr>
+        <td class="pr-4">Lifetime</td>
+        <td class="font-semibold">{result.lifetime} seconds</td>
+      </tr>
+      <tr>
+        <td class="pr-4">Depth</td>
+        <td class="font-semibold">{result.depth}</td>
+      </tr>
+      <tr>
+        <td class="pr-4">Use Hit Objects</td>
+        <td class="font-semibold">{result.useHitObjects ? "Yes" : "No"}</td>
+      </tr>
+      <tr>
+        <td class="pr-4">Size</td>
+        <td class="font-semibold">{rectImage.width} x {rectImage.height} px</td>
+      </tr>
+      <tr>
+        <td class="pr-4">Color Count</td>
+        <td class="font-semibold">
+          {#if rectImage.palette.length > 9}
+            ⚠️
+          {/if}
+          {rectImage.palette.length}
+        </td>
+      </tr>
+      <tr>
+        <td class="pr-4">Object Count</td>
+        <td class="font-semibold">{rectImage.rects.length}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
 <Separator class="my-4" />
 

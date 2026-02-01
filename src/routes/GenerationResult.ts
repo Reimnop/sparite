@@ -1,5 +1,5 @@
-import type { ColorRgb } from "$lib/algo/Color";
-import type { ColoredRect } from "$lib/algo/Rect";
+import type { Alignment } from "$lib/Alignment";
+import type { RectImage } from "$lib/data/RectImage";
 import type { PrefabType } from "$lib/PrefabType";
 
 export interface GenerationResult {
@@ -7,11 +7,10 @@ export interface GenerationResult {
   prefabDescription: string;
   prefabType: PrefabType;
   pixelsPerUnit: number;
-  lifetime: number,
-	depth: number,
-	useHitObjects: boolean,
-  rects: ColoredRect[];
-  palette: ColorRgb[];
-  width: number;
-  height: number;
+  lifetime: number;
+	depth: number;
+  horizontalAlignment: Alignment;
+  verticalAlignment: Alignment;
+	useHitObjects: boolean;
+  rectImage: RectImage;
 }
