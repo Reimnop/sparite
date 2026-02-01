@@ -3,13 +3,15 @@
   import Button from "$lib/components/ui/button/button.svelte";
   import { onMount } from "svelte";
   import type { GenerationResult } from "./GenerationResult";
-
-  import NoColor from "$lib/icons/no-color.svg";
   import { createPrefab } from "$lib/algo/VgpExport";
   import Separator from "$lib/components/ui/separator/separator.svelte";
   import type { RectImage } from "$lib/data/RectImage";
-    import { Alignment } from "$lib/Alignment";
-    import type { ColoredRect } from "$lib/algo/Rect";
+  import { Alignment } from "$lib/Alignment";
+  import type { ColoredRect } from "$lib/algo/Rect";
+
+  import NoColor from "$lib/icons/no-color.svg";
+  import ArrowUp from "$lib/icons/arrow-up.svg";
+  import ArrowDown from "$lib/icons/arrow-down.svg";
 
   interface ThemeColor {
     index: number;
@@ -60,16 +62,15 @@
   }
 
   function onDownloadButtonClicked() {
-    // transform rects according to ppu and alignment
-    const transformedRects = transformRects(
+    const colorIndexMap = getColorIndexMap();
+    const transformedRects = postProcessRects(
       result.rectImage.rects,
       result.pixelsPerUnit,
       result.horizontalAlignment,
-      result.verticalAlignment
+      result.verticalAlignment,
+      colorIndexMap
     );
-
     const filename = `${normalizeFileName(result.prefabName)}.vgp`;
-    const colorIndexMap = getColorIndexMap();
     const prefab = createPrefab(
       result.prefabName,
       result.prefabDescription,
@@ -78,7 +79,6 @@
       result.depth,
       result.useHitObjects,
       transformedRects,
-      colorIndexMap,
       Date.now()
     );
     const prefabJson = JSON.stringify(prefab);
@@ -87,11 +87,12 @@
     downloadData([prefabData], filename, "application/octet-stream");
   }
 
-  function transformRects(
+  function postProcessRects(
     rects: ColoredRect[],
     pixelsPerUnit: number,
     horizontalAlignment: Alignment,
-    verticalAlignment: Alignment
+    verticalAlignment: Alignment,
+    colorMap: Map<number, number>
   ): ColoredRect[] {
     const scaleFactor = 1 / pixelsPerUnit; // the generator assumes 1 ppu, so scale accordingly
     const offsetX = computeXOffset(rectImage.width * scaleFactor, horizontalAlignment);
@@ -103,7 +104,10 @@
         y: rect.y * scaleFactor + offsetY,
         width: rect.width * scaleFactor,
         height: rect.height * scaleFactor,
-        color: rect.color
+        color: {
+          index: colorMap.get(rect.color.index) ?? rect.color.index,
+          opacity: rect.color.opacity
+        }
       };
     });
 
@@ -163,6 +167,22 @@
   function copyToClipboard(text: string) {
     navigator.clipboard.writeText(text);
   }
+
+  function moveColorUp(index: number) {
+    if (index <= 0) return;
+
+    const temp = colors[index - 1];
+    colors[index - 1] = colors[index];
+    colors[index] = temp;
+  }
+
+  function moveColorDown(index: number) {
+    if (index >= colors.length - 1) return;
+
+    const temp = colors[index + 1];
+    colors[index + 1] = colors[index];
+    colors[index] = temp;
+  }
 </script>
 
 <div class="font-semibold">{result.prefabName}</div>
@@ -171,7 +191,7 @@
 <Separator class="my-4" />
 
 <div class="font-semibold">Prefab Info</div>
-<div class="flex gap-4 items-center">
+<div class="flex gap-2 items-center flex-wrap">
   <canvas
     class="bg-transparent max-h-32 max-w-48 h-full"
     use:drawGenerationOnCanvas={rectImage}></canvas>
@@ -192,7 +212,7 @@
       </tr>
       <tr>
         <td class="pr-4">Size</td>
-        <td class="font-semibold">{rectImage.width} x {rectImage.height} px</td>
+        <td class="font-semibold">{rectImage.width}&times;{rectImage.height} px</td>
       </tr>
       <tr>
         <td class="pr-4">Color Count</td>
@@ -214,26 +234,36 @@
 <Separator class="my-4" />
 
 <div class="font-semibold">Theme</div>
-<p class="text-sm text-muted-foreground">Click to copy to clipboard. Drag to reorder.</p>
+<p class="text-sm text-muted-foreground">Click to copy to clipboard. Reorder if necessary.</p>
 
 <div>
-  {#each colors as color}
-    <div class="relative h-12">
+  {#each colors as color, i}
+    <div class="h-12 py-1.5 w-full flex items-center gap-2">
+      <div class="h-full grid grid-rows-2 place-items-center">
+        <button class="h-2 w-4 cursor-pointer" onclick={() => moveColorUp(i)}>
+          <img src={ArrowUp} alt="Move up" />
+        </button>
+        <button class="h-2 w-4 cursor-pointer" onclick={() => moveColorDown(i)}>
+          <img src={ArrowDown} alt="Move down" />
+        </button>
+      </div>
       {#if color}
-        <Button
-          variant="outline"
-          class="absolute top-1/2 w-full -translate-y-1/2 cursor-pointer justify-start"
-          onclick={() => copyToClipboard(getColorHex(color.color))}
-        >
-          <div
-            class="-ml-2 h-6 w-6 rounded-sm border border-muted-foreground/50"
-            style="background-color: {getColorHex(color.color)};"
-          ></div>
-          <span>{getColorHex(color.color)}</span>
-        </Button>
+        <div class="w-full">
+          <Button
+            variant="outline"
+            class="w-full cursor-pointer justify-start"
+            onclick={() => copyToClipboard(getColorHex(color.color))}
+          >
+            <div
+              class="-ml-2 h-6 w-6 rounded-sm border border-muted-foreground/50"
+              style="background-color: {getColorHex(color.color)};"
+            ></div>
+            <span>{getColorHex(color.color)}</span>
+          </Button>
+        </div>
       {:else}
         <img
-          class="absolute top-1/2 left-2 h-6 w-6 -translate-y-1/2 rounded-sm border border-muted-foreground/50 bg-transparent"
+          class="ml-2 h-6 w-6 rounded-sm border border-muted-foreground/50 bg-transparent"
           src={NoColor}
           alt="No color"
         />
@@ -244,4 +274,4 @@
 
 <Separator class="my-4" />
 
-<Button class="w-full cursor-pointer" onclick={onDownloadButtonClicked}>Download Prefab</Button>
+<Button class="w-full cursor-pointer" onclick={onDownloadButtonClicked}>Export &amp; Download Prefab</Button>

@@ -86,6 +86,11 @@
 </script>
 
 <div class="min-h-screen w-full flex flex-col">
+  <header class="m-4">
+    <h1 class="text-center text-4xl font-bold">Sparite</h1>
+    <p class="text-center text-muted-foreground mt-2">Turn your pixel art into Project Arrhythmia prefabs!</p>
+  </header>
+
   <div class="flex flex-col md:flex-row md:justify-center md:items-start gap-8 p-8">
     <Card.Root class="w-full md:max-w-md">
       <Card.Header>
@@ -114,11 +119,11 @@
     </Card.Root>
   </div>
 
-  <div class="mt-auto">
+  <footer class="mt-auto">
     <Separator />
     <p class="text-center text-sm text-muted-foreground py-4">
-      Sparite. Made by Reimnop and enchart.<br>
+      Made by Reimnop and enchart.<br>
       <a class="underline" href="https://github.com/Reimnop/sparite">Source code</a>
     </p>
-  </div>
+  </footer>
 </div>
