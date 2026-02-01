@@ -10,6 +10,7 @@ export interface PrefabObject {
 	p_id?: string;
 	ak_t?: number;
 	ak_o?: number;
+	p_t?: string;
 	ot?: number;
 	d?: number;
 	n?: string;
