@@ -10,8 +10,9 @@
   import { FormName } from "$lib/FormName";
   import { Textarea } from "$lib/components/ui/textarea";
   import { Alignment } from "$lib/Alignment";
-  import type { GenerationFormData } from "./GenerationFormData";
+  import type { StaticGenerationFormData } from "./GenerationFormData";
   import IconRadioGroupItem from "./IconRadioGroupItem.svelte";
+  import type { RawImage } from "$lib/algo/RawImage";
 
   import LeftUnchecked from "$lib/icons/alignment/left-unchecked.svg";
   import LeftChecked from "$lib/icons/alignment/left-checked.svg";
@@ -54,14 +55,14 @@
   let currentVerticalAlignment: Alignment = $state(Alignment.Middle);
 
   interface Props {
-    onSubmit: (formData: GenerationFormData) => void;
+    onSubmit: (formData: StaticGenerationFormData) => void;
   }
 
   let { 
     onSubmit 
   } : Props = $props();
 
-  function onFormSubmitted(event: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement }) {
+  async function onFormSubmitted(event: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement }) {
     event.preventDefault();
 
     const formData = new FormData(event.currentTarget);
@@ -80,7 +81,10 @@
       return;
     }
 
+    const image = await loadImage(imageFile);
+
     onSubmit({
+      type: "static",
       prefabName,
       prefabDescription,
       prefabType,
@@ -90,7 +94,46 @@
       horizontalAlignment,
       verticalAlignment,
       useHitObjects,
-      imageFile
+      image
+    });
+  }
+
+  async function loadImage(imageFile: File): Promise<RawImage> {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(imageFile);
+
+      const image = new Image();
+      image.src = url;
+      image.onload = () => {
+        URL.revokeObjectURL(url); // free memory
+
+        const canvas = document.createElement("canvas");
+        canvas.width = image.width;
+        canvas.height = image.height;
+        
+        const ctx = canvas.getContext("2d");
+
+        if (!ctx) {
+          reject(new Error("Failed to get canvas context"));
+          return;
+        }
+
+        ctx.drawImage(image, 0, 0);
+
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+        resolve({
+          width: image.width,
+          height: image.height,
+          frames: [{ data: imageData.data, delay: 0 }]
+        });
+      };
+
+      image.onerror = (err) => {
+        URL.revokeObjectURL(url); // free memory
+
+        reject(err);
+      };
     });
   }
 </script>
@@ -171,7 +214,7 @@
 
       <Field.Field>
         <Field.Label>Image File</Field.Label>
-        <Input class="cursor-pointer" type="file" name={FormName.ImageFile} />
+        <Input class="cursor-pointer" type="file" accept="image/*" name={FormName.ImageFile} />
       </Field.Field>
 
       <Field.Field>

@@ -1,6 +1,5 @@
 import type { Prefab, PrefabObject, PrefabObjectEvent, PrefabObjectOrigin } from "$lib/data/Vgp";
 import type { IndexedColor } from "./Color";
-import type { ColoredRect } from "./Rect";
 
 enum ObjectType {
   Hit = 4,
@@ -10,6 +9,17 @@ enum ObjectType {
 
 type Vec2 = [number, number];
 
+export interface PrefabRect {
+	positions: Keyframe<Vec2>[];
+	sizes: Keyframe<Vec2>[];
+	colors: Keyframe<IndexedColor>[];
+}
+
+export interface Keyframe<T> {
+	time: number;
+	value: T;
+}
+
 export function createPrefab(
   name: string,
   description: string,
@@ -17,14 +27,14 @@ export function createPrefab(
   lifetime: number,
   depth: number,
   hit: boolean,
-  coloredRects: ColoredRect[],
+  prefabRects: PrefabRect[],
   seed: number
 ): Prefab {
   return {
     n: name,
     description,
     type,
-    objs: createPrefabObjects(lifetime, depth, hit, coloredRects, seed)
+    objs: createPrefabObjects(lifetime, depth, hit, prefabRects, seed)
   };
 }
 
@@ -32,7 +42,7 @@ function createPrefabObjects(
   lifetime: number,
   depth: number,
   hit: boolean,
-  coloredRects: ColoredRect[],
+  prefabRects: PrefabRect[],
   seed: number
 ): PrefabObject[] {
   const parentObject: PrefabObject = createPrefabObject(
@@ -44,15 +54,17 @@ function createPrefabObjects(
     ObjectType.Empty,
     lifetime,
     depth,
-    [0, 0],
-    [1, 1],
-    { index: 0, opacity: 0 }
+    [{ time: 0, value: [0, 0] }],
+    [{ time: 0, value: [1, 1] }],
+    [{ time: 0, value: { index: 0, opacity: 100 } }]
   );
 
-  const rectObjects = coloredRects.map((rect, i) => {
+  const rectObjects = prefabRects.map((rect, i) => {
     const id = generateId(i + 1, seed);
-    const position: Vec2 = [rect.x, -rect.y];
-    const scale: Vec2 = [rect.width, rect.height];
+    const positions: Keyframe<Vec2>[] = rect.positions.map(pos => ({
+			time: pos.time,
+			value: [pos.value[0], -pos.value[1]]
+		}));
     const origin: PrefabObjectOrigin = { x: 0.5, y: -0.5 };
 
     return createPrefabObject(
@@ -64,9 +76,9 @@ function createPrefabObjects(
       hit ? ObjectType.Hit : ObjectType.NoHit,
       lifetime,
       depth,
-      position,
-      scale,
-      rect.color
+      positions,
+      rect.sizes,
+      rect.colors
     );
   });
 
@@ -82,25 +94,27 @@ function createPrefabObject(
   type: ObjectType,
   lifetime: number,
   depth: number,
-  position: Vec2,
-  scale: Vec2,
-  color: IndexedColor
+  positions: Keyframe<Vec2>[],
+  scales: Keyframe<Vec2>[],
+  colors: Keyframe<IndexedColor>[]
 ): PrefabObject {
   const posEvent: PrefabObjectEvent = {
     k: [
-      {
-        t: 0,
-        ev: position
-      }
+      ...positions.map(pos => ({
+				t: pos.time,
+				ev: [pos.value[0], pos.value[1]],
+				ct: "Instant"
+			}))
     ]
   };
 
   const scaEvent: PrefabObjectEvent = {
     k: [
-      {
-        t: 0,
-        ev: scale
-      }
+      ...scales.map(sca => ({
+				t: sca.time,
+				ev: [sca.value[0], sca.value[1]],
+				ct: "Instant"
+			}))
     ]
   };
 
@@ -115,10 +129,11 @@ function createPrefabObject(
 
   const colEvent: PrefabObjectEvent = {
     k: [
-      {
-        t: 0,
-        ev: [color.index, color.opacity * 100]
-      }
+      ...colors.map(col => ({
+				t: col.time,
+				ev: [col.value.index, col.value.opacity * 100],
+				ct: "Instant"
+			}))
     ]
   };
 

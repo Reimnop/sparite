@@ -8,5 +8,7 @@ export enum FormName {
 	HorizontalAlignment = 'horizontal-alignment',
 	VerticalAlignment = 'vertical-alignment',
 	UseHitObjects = 'use-hit-objects',
+	Speed = 'speed',
+	Looped = 'looped',
 	ImageFile = 'image-file'
 }
