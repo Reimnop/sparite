@@ -1,5 +1,5 @@
+import type { RectImage } from "$lib/algo/RectImage";
 import type { Alignment } from "$lib/Alignment";
-import type { RectImage } from "$lib/data/RectImage";
 import type { PrefabType } from "$lib/PrefabType";
 
 export interface GenerationResult {
@@ -12,5 +12,7 @@ export interface GenerationResult {
   horizontalAlignment: Alignment;
   verticalAlignment: Alignment;
 	useHitObjects: boolean;
+  speed: number;
+  looped: boolean;
   rectImage: RectImage;
 }

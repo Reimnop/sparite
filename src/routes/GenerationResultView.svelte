@@ -3,9 +3,9 @@
   import Button from "$lib/components/ui/button/button.svelte";
   import { onMount } from "svelte";
   import type { GenerationResult } from "./GenerationResult";
-  import { createPrefab } from "$lib/algo/VgpExport";
+  import { createPrefab, type PrefabRect } from "$lib/algo/VgpExport";
   import Separator from "$lib/components/ui/separator/separator.svelte";
-  import type { RectImage } from "$lib/data/RectImage";
+  import type { RectImage, RectImageFrame } from "$lib/algo/RectImage";
   import { Alignment } from "$lib/Alignment";
   import type { ColoredRect } from "$lib/algo/Rect";
 
@@ -24,6 +24,7 @@
 
   let { result }: Props = $props();
   let rectImage = $derived(result.rectImage);
+  let objectCount = $derived(determineObjectCount(rectImage.frames));
 
   let colors: (ThemeColor | null)[] = $state([]);
 
@@ -37,7 +38,7 @@
     }
   });
 
-  function drawGenerationOnCanvas(canvas: HTMLCanvasElement, rectImage: RectImage) {
+  function drawGenerationOnCanvas(canvas: HTMLCanvasElement, { rectImage, frameIndex }: { rectImage: RectImage, frameIndex: number }) {
     const scaleFactor = 4; // scale up for better visibility
 
     canvas.width = rectImage.width * scaleFactor;
@@ -53,8 +54,10 @@
     // disable image smoothing
     ctx.imageSmoothingEnabled = false;
 
+    const frame = rectImage.frames[frameIndex];
+
     // draw each rect
-    for (const rect of rectImage.rects) {
+    for (const rect of frame.rects) {
       const color = rectImage.palette[rect.color.index];
       ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${rect.color.opacity})`;
       ctx.fillRect(rect.x * scaleFactor, rect.y * scaleFactor, rect.width * scaleFactor, rect.height * scaleFactor);
@@ -63,13 +66,57 @@
 
   function onDownloadButtonClicked() {
     const colorIndexMap = getColorIndexMap();
-    const transformedRects = postProcessRects(
-      result.rectImage.rects,
-      result.pixelsPerUnit,
-      result.horizontalAlignment,
-      result.verticalAlignment,
-      colorIndexMap
-    );
+
+    // allocate prefab rects
+    const prefabRects: PrefabRect[] = [];
+    for (let i = 0; i < objectCount; i++) {
+      prefabRects.push({
+        positions: [],
+        sizes: [],
+        colors: []
+      });
+    }
+
+    // loop through every frame
+    let time = 0, currentFrameIndex = 0;
+    while (time < result.lifetime) {
+      const coloredRects = postProcessRectImageFrame(
+        rectImage,
+        currentFrameIndex,
+        result.pixelsPerUnit,
+        result.horizontalAlignment,
+        result.verticalAlignment,
+        colorIndexMap
+      );
+
+      // push keyframes to prefab rects
+      let j = 0;
+      for (; j < coloredRects.length; j++) {
+        const rect = coloredRects[j];
+        prefabRects[j].positions.push({ time, value: [rect.x, rect.y] });
+        prefabRects[j].sizes.push({ time, value: [rect.width, rect.height] });
+        prefabRects[j].colors.push({ time, value: rect.color });
+      }
+
+      // hide remaining objects
+      for (; j < prefabRects.length; j++) {
+        prefabRects[j].positions.push({ time, value: [0, 0] });
+        prefabRects[j].sizes.push({ time, value: [0, 0] });
+        prefabRects[j].colors.push({ time, value: { index: 0, opacity: 0 } });
+      }
+
+      time += rectImage.frames[currentFrameIndex].delay / 1000;
+      
+      // advance frame index
+      currentFrameIndex++;
+      if (currentFrameIndex >= rectImage.frames.length) {
+        if (!result.looped) {
+          break;
+        }
+        currentFrameIndex = 0;
+      }
+    }
+    
     const filename = `${normalizeFileName(result.prefabName)}.vgp`;
     const prefab = createPrefab(
       result.prefabName,
@@ -78,7 +125,7 @@
       result.lifetime,
       result.depth,
       result.useHitObjects,
-      transformedRects,
+      prefabRects,
       Date.now()
     );
     const prefabJson = JSON.stringify(prefab);
@@ -87,8 +134,9 @@
     downloadData([prefabData], filename, "application/octet-stream");
   }
 
-  function postProcessRects(
-    rects: ColoredRect[],
+  function postProcessRectImageFrame(
+    rectImage: RectImage,
+    frameIndex: number,
     pixelsPerUnit: number,
     horizontalAlignment: Alignment,
     verticalAlignment: Alignment,
@@ -98,14 +146,20 @@
     const offsetX = computeXOffset(rectImage.width * scaleFactor, horizontalAlignment);
     const offsetY = computeYOffset(rectImage.height * scaleFactor, verticalAlignment);
 
-    const result = rects.map((rect) => {
+    const frame = rectImage.frames[frameIndex];
+
+    const result = frame.rects.map((rect) => {
+      let mappedIndex = colorMap.get(rect.color.index);
+      if (mappedIndex === undefined) {
+        mappedIndex = rect.color.index;
+      }
       return {
         x: rect.x * scaleFactor + offsetX,
         y: rect.y * scaleFactor + offsetY,
         width: rect.width * scaleFactor,
         height: rect.height * scaleFactor,
         color: {
-          index: colorMap.get(rect.color.index) ?? rect.color.index,
+          index: mappedIndex,
           opacity: rect.color.opacity
         }
       };
@@ -183,6 +237,10 @@
     colors[index + 1] = colors[index];
     colors[index] = temp;
   }
+
+  function determineObjectCount(frames: RectImageFrame[]): number {
+    return Math.max(...frames.map(frame => frame.rects.length));
+  }
 </script>
 
 <div class="font-semibold">{result.prefabName}</div>
@@ -194,7 +252,7 @@
 <div class="flex gap-2 items-center flex-wrap">
   <canvas
     class="bg-transparent max-h-32 max-w-48 h-full"
-    use:drawGenerationOnCanvas={rectImage}></canvas>
+    use:drawGenerationOnCanvas={{ rectImage, frameIndex: 0 }}></canvas>
 
   <table class="text-sm text-muted-foreground">
     <tbody>
@@ -225,8 +283,14 @@
       </tr>
       <tr>
         <td class="pr-4">Object Count</td>
-        <td class="font-semibold">{rectImage.rects.length}</td>
+        <td class="font-semibold">{objectCount}</td>
       </tr>
+      {#if rectImage.frames.length > 1}
+        <tr>
+          <td class="pr-4">Frame Count</td>
+          <td class="font-semibold">{rectImage.frames.length}</td>
+        </tr>
+      {/if}
     </tbody>
   </table>
 </div>

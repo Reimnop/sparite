@@ -1,18 +1,21 @@
 <script lang="ts">
+  import * as Tabs from "$lib/components/ui/tabs/index.js";
   import * as Card from "$lib/components/ui/card";
-  import { createIndexedImage, type RawImage } from "$lib/algo/IndexedImage";
-  import { convertIndexedImageToColoredRects } from "$lib/algo/Processor";
+  import { createIndexedImage } from "$lib/algo/IndexedImage";
   import type { GenerationFormData } from "./GenerationFormData";
-  import GenerationForm from "./GenerationForm.svelte";
+  import StaticGenerationForm from "./StaticGenerationForm.svelte";
   import type { GenerationResult } from "./GenerationResult";
   import GenerationResultView from "./GenerationResultView.svelte";
   import Separator from "$lib/components/ui/separator/separator.svelte";
-  import type { RectImage } from "$lib/data/RectImage";
+  import type { RectImage } from "$lib/algo/RectImage";
+  import { convertIndexedImageToRectImage } from "$lib/algo/Processor";
+  import type { RawImage } from "$lib/algo/RawImage";
+  import AnimatedGenerationForm from "./AnimatedGenerationForm.svelte";
 
   let generationResult: GenerationResult | null = $state(null);
 
-  async function onFormSubmitted(formData: GenerationFormData) {
-    const rectImage = await generateRectImage(formData.imageFile);
+  function onFormSubmitted(formData: GenerationFormData) {
+    const rectImage = generateRectImage(formData.image);
 
     generationResult = {
       prefabName: formData.prefabName,
@@ -24,64 +27,20 @@
       horizontalAlignment: formData.horizontalAlignment,
       verticalAlignment: formData.verticalAlignment,
       useHitObjects: formData.useHitObjects,
-      rectImage: rectImage
+      speed: formData.type === "animated" ? formData.speed : 1,
+      looped: formData.type === "animated" ? formData.looped : false,
+      rectImage
     };
   }
 
-  async function generateRectImage(imageFile: File): Promise<RectImage> {
-    const rawImage = await loadImage(imageFile);
-
+  function generateRectImage(image: RawImage): RectImage {
     // create indexed image
-    const indexedImage = createIndexedImage(rawImage);
+    const indexedImage = createIndexedImage(image);
 
-    // create colored rects
-    const coloredRects = convertIndexedImageToColoredRects(indexedImage);
+    // create rect image
+    const rectImage = convertIndexedImageToRectImage(indexedImage);
 
-    return {
-      rects: coloredRects,
-      palette: indexedImage.palette,
-      width: indexedImage.width,
-      height: indexedImage.height
-    };
-  }
-
-  async function loadImage(imageFile: File): Promise<RawImage> {
-    return new Promise((resolve, reject) => {
-      const url = URL.createObjectURL(imageFile);
-
-      const image = new Image();
-      image.src = url;
-      image.onload = () => {
-        URL.revokeObjectURL(url); // free memory
-
-        const canvas = document.createElement("canvas");
-        canvas.width = image.width;
-        canvas.height = image.height;
-        
-        const ctx = canvas.getContext("2d");
-
-        if (!ctx) {
-          reject(new Error("Failed to get canvas context"));
-          return;
-        }
-
-        ctx.drawImage(image, 0, 0);
-
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-        resolve({
-          width: image.width,
-          height: image.height,
-          data: imageData.data
-        });
-      };
-
-      image.onerror = (err) => {
-        URL.revokeObjectURL(url); // free memory
-
-        reject(err);
-      };
-    });
+    return rectImage;
   }
 </script>
 
@@ -92,15 +51,35 @@
   </header>
 
   <div class="flex flex-col md:flex-row md:justify-center md:items-start gap-8 p-8">
-    <Card.Root class="w-full md:max-w-md">
-      <Card.Header>
-        <Card.Title>Generation Info</Card.Title>
-        <Card.Description>Enter the details, upload your sprite and click Generate!</Card.Description>
-      </Card.Header>
-      <Card.Content>
-        <GenerationForm onSubmit={onFormSubmitted} />
-      </Card.Content>
-    </Card.Root>
+    <Tabs.Root value="static" class="w-full md:max-w-md">
+      <Tabs.List>
+        <Tabs.Trigger class="cursor-pointer" value="static">Static</Tabs.Trigger>
+        <Tabs.Trigger class="cursor-pointer" value="animated">Animated</Tabs.Trigger>
+      </Tabs.List>
+      <Tabs.Content value="static">
+        <Card.Root>
+          <Card.Header>
+            <Card.Title>Static Prefab Generation</Card.Title>
+            <Card.Description>Generate static prefabs from your pixel art!</Card.Description>
+          </Card.Header>
+          <Card.Content>
+            <StaticGenerationForm onSubmit={onFormSubmitted} />
+          </Card.Content>
+        </Card.Root>
+      </Tabs.Content>
+      <Tabs.Content value="animated">
+        <Card.Root>
+          <Card.Header>
+            <Card.Title>Animated Prefab Generation</Card.Title>
+            <Card.Description>Generate animated prefabs from your animated pixel art!</Card.Description>
+          </Card.Header>
+          <Card.Content>
+            <AnimatedGenerationForm onSubmit={onFormSubmitted} />
+          </Card.Content>
+        </Card.Root>
+      </Tabs.Content>
+    </Tabs.Root>
+
     <Card.Root class="w-full md:max-w-lg">
       <Card.Header>
         <Card.Title>Generated Prefab</Card.Title>

@@ -1,7 +1,24 @@
-import { indexedPixelEquals, type IndexedImage } from './IndexedImage';
-import type { ColoredRect } from './Rect';
+import { indexedPixelEquals, type IndexedImage } from "./IndexedImage";
+import type { ColoredRect } from "./Rect";
+import type { RectImage } from "./RectImage";
 
-export function convertIndexedImageToColoredRects(image: IndexedImage): ColoredRect[] {
+export function convertIndexedImageToRectImage(image: IndexedImage): RectImage {
+	const rectFrames = image.frames.map((frame, frameIndex) => {
+		const rects = convertIndexedImageToColoredRects(image, frameIndex);
+		return {
+			rects,
+			delay: frame.delay
+		};
+	});
+	return {
+		width: image.width,
+		height: image.height,
+		frames: rectFrames,
+		palette: image.palette
+	};
+}
+
+function convertIndexedImageToColoredRects(image: IndexedImage, frameIndex: number): ColoredRect[] {
 	// convert image into rects
 	// using a greedy algorithm
 	const flags: boolean[][] = Array.from({ length: image.height }, () =>
@@ -21,18 +38,18 @@ export function convertIndexedImageToColoredRects(image: IndexedImage): ColoredR
 			let h = 1;
 
 			// expand on both direction until we can't anymore
-			while (canBeARect(image, flags, x, y, w + 1, h + 1)) {
+			while (canBeARect(image, frameIndex, flags, x, y, w + 1, h + 1)) {
 				w++;
 				h++;
 			}
 
 			// expand on width until we can't anymore
-			while (canBeARect(image, flags, x, y, w + 1, h)) {
+			while (canBeARect(image, frameIndex, flags, x, y, w + 1, h)) {
 				w++;
 			}
 
 			// expand on height until we can't anymore
-			while (canBeARect(image, flags, x, y, w, h + 1)) {
+			while (canBeARect(image, frameIndex, flags, x, y, w, h + 1)) {
 				h++;
 			}
 
@@ -43,7 +60,7 @@ export function convertIndexedImageToColoredRects(image: IndexedImage): ColoredR
 				}
 			}
 
-			const color = image.pixels[y][x];
+			const color = image.frames[frameIndex].pixels[y][x];
 			if (color) {
 				coloredRects.push({
 					x,
@@ -61,6 +78,7 @@ export function convertIndexedImageToColoredRects(image: IndexedImage): ColoredR
 
 function canBeARect(
 	image: IndexedImage,
+	frameIndex: number,
 	flags: boolean[][],
 	x0: number,
 	y0: number,
@@ -72,12 +90,14 @@ function canBeARect(
 		return false;
 	}
 
+	const frame = image.frames[frameIndex];
+
 	// check if all pixels are the same and not already covered
-	const firstPixel = image.pixels[y0][x0];
+	const firstPixel = frame.pixels[y0][x0];
 
 	for (let y = y0; y < y0 + h; y++) {
 		for (let x = x0; x < x0 + w; x++) {
-			const pixel = image.pixels[y][x];
+			const pixel = frame.pixels[y][x];
 			if (flags[y][x] || !indexedPixelEquals(pixel, firstPixel)) {
 				return false;
 			}

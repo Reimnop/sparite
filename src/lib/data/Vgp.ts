@@ -37,4 +37,5 @@ export interface PrefabObjectEvent {
 export interface PrefabObjectKeyframe {
 	t: number;
 	ev: number[];
+	ct?: string;
 }
