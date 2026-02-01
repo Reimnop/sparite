@@ -2,6 +2,7 @@
   import "./layout.css";
   import favicon from "$lib/assets/favicon.png";
   import { ModeWatcher } from "mode-watcher";
+  import * as Tooltip from "$lib/components/ui/tooltip/index.js";
 
   let { children } = $props();
 </script>
@@ -31,4 +32,7 @@
 </svelte:head>
 
 <ModeWatcher />
-{@render children()}
+
+<Tooltip.Provider>
+  {@render children()}
+</Tooltip.Provider>

@@ -1,10 +1,11 @@
 <script lang="ts">
-  import { Switch } from "$lib/components/ui/switch";
   import { Input } from "$lib/components/ui/input";
   import * as Select from "$lib/components/ui/select";
   import { Button } from "$lib/components/ui/button";
   import * as RadioGroup from "$lib/components/ui/radio-group";
   import * as Field from "$lib/components/ui/field";
+  import * as Tooltip from "$lib/components/ui/tooltip/index.js";
+  import Checkbox from "$lib/components/ui/checkbox/checkbox.svelte";
   import { PrefabType } from "$lib/PrefabType";
   import { FormName } from "$lib/FormName";
   import { Textarea } from "$lib/components/ui/textarea";
@@ -24,7 +25,6 @@
   import MiddleChecked from "$lib/icons/alignment/middle-checked.svg";
   import BottomUnchecked from "$lib/icons/alignment/bottom-unchecked.svg";
   import BottomChecked from "$lib/icons/alignment/bottom-checked.svg";
-    import Checkbox from "$lib/components/ui/checkbox/checkbox.svelte";
 
   const prefabTypeNames: Record<PrefabType, string> = {
     [PrefabType.Character]: "Character",
@@ -122,10 +122,17 @@
       </Field.Field>
 
       <Field.Group class="grid gap-2 sm:grid-cols-3">
-        <Field.Field>
-          <Field.Label>Pixels Per Unit</Field.Label>
-          <Input type="number" name={FormName.PixelsPerUnit} bind:value={currentPixelsPerUnit} />
-        </Field.Field>
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <Field.Field>
+              <Field.Label>Pixels Per Unit</Field.Label>
+              <Input type="number" name={FormName.PixelsPerUnit} bind:value={currentPixelsPerUnit} />
+            </Field.Field>
+          </Tooltip.Trigger>
+          <Tooltip.Content>
+            <p class="text-center">Amount of pixels to fit in one in-game unit.<br>Higher values result in smaller objects.</p>
+          </Tooltip.Content>
+        </Tooltip.Root>
 
         <Field.Field>
           <Field.Label>Lifetime</Field.Label>
