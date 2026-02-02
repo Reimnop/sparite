@@ -404,6 +404,6 @@
 
 <Separator class="my-4" />
 
-<Button class="w-full cursor-pointer" onclick={onDownloadButtonClicked}
-  >Export &amp; Download Prefab</Button
->
+<Button class="w-full cursor-pointer" onclick={onDownloadButtonClicked}>
+  Export &amp; Download Prefab
+</Button>

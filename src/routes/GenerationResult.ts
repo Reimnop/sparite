@@ -8,10 +8,10 @@ export interface GenerationResult {
   prefabType: PrefabType;
   pixelsPerUnit: number;
   lifetime: number;
-	depth: number;
+  depth: number;
   horizontalAlignment: Alignment;
   verticalAlignment: Alignment;
-	useHitObjects: boolean;
+  useHitObjects: boolean;
   speed: number;
   looped: boolean;
   rectImage: RectImage;

@@ -162,11 +162,11 @@
         <Field.Field>
           <Field.Label>Prefab Type</Field.Label>
           <Select.Root type="single" name={FormName.PrefabType} bind:value={currentPrefabTypeStr}>
-            <Select.Trigger
-              >{prefabTypeNames[parseInt(currentPrefabTypeStr, 10) as PrefabType]}</Select.Trigger
-            >
+            <Select.Trigger>
+              {prefabTypeNames[parseInt(currentPrefabTypeStr, 10) as PrefabType]}
+            </Select.Trigger>
             <Select.Content>
-              {#each Object.entries(prefabTypeNames) as [key, value]}
+              {#each Object.entries(prefabTypeNames) as [key, value] (key)}
                 <Select.Item value={key.toString()}>{value}</Select.Item>
               {/each}
             </Select.Content>
@@ -197,8 +197,9 @@
           </Tooltip.Trigger>
           <Tooltip.Content>
             <p class="text-center">
-              Amount of pixels to fit in one in-game unit.<br />Higher values result in smaller
-              objects.
+              Amount of pixels to fit in one in-game unit.
+              <br />
+              Higher values result in smaller objects.
             </p>
           </Tooltip.Content>
         </Tooltip.Root>
