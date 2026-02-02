@@ -1,6 +1,6 @@
 import type { RawImage } from "$lib/algo/RawImage";
-import type { Alignment } from "$lib/Alignment";
-import type { PrefabType } from "$lib/PrefabType";
+import type { Alignment } from "./Alignment";
+import type { PrefabType } from "./PrefabType";
 
 export type StaticGenerationFormType = "static";
 export type AnimatedGenerationFormType = "animated";

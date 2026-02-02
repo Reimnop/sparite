@@ -123,5 +123,5 @@ function canBeARect(
 		}
 	}
 
-	return true;
+  return true;
 }

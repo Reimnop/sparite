@@ -2,15 +2,15 @@
   import * as Tabs from "$lib/components/ui/tabs/index.js";
   import * as Card from "$lib/components/ui/card";
   import { createIndexedImage } from "$lib/algo/IndexedImage";
-  import type { GenerationFormData } from "./GenerationFormData";
-  import StaticGenerationForm from "./StaticGenerationForm.svelte";
-  import type { GenerationResult } from "./GenerationResult";
-  import GenerationResultView from "./GenerationResultView.svelte";
+  import type { GenerationFormData } from "$lib/types/GenerationFormData";
+  import StaticGenerationForm from "$lib/components/sparite/StaticGenerationForm.svelte";
+  import type { GenerationResult } from "$lib/types/GenerationResult";
+  import GenerationResultView from "$lib/components/sparite/GenerationResultView.svelte";
   import Separator from "$lib/components/ui/separator/separator.svelte";
   import type { RectImage } from "$lib/algo/RectImage";
   import { convertIndexedImageToRectImage } from "$lib/algo/Processor";
   import type { RawImage } from "$lib/algo/RawImage";
-  import AnimatedGenerationForm from "./AnimatedGenerationForm.svelte";
+  import AnimatedGenerationForm from "$lib/components/sparite/AnimatedGenerationForm.svelte";
 
   let generationResult: GenerationResult | null = $state(null);
 
@@ -44,13 +44,15 @@
   }
 </script>
 
-<div class="min-h-screen w-full flex flex-col">
+<div class="flex min-h-screen w-full flex-col">
   <header class="m-4">
     <h1 class="text-center text-4xl font-bold">Sparite</h1>
-    <p class="text-center text-muted-foreground mt-2">Turn your pixel art into Project Arrhythmia prefabs!</p>
+    <p class="mt-2 text-center text-muted-foreground">
+      Turn your pixel art into Project Arrhythmia prefabs!
+    </p>
   </header>
 
-  <div class="flex flex-col md:flex-row md:justify-center md:items-start gap-8 p-8">
+  <div class="flex flex-col gap-8 p-8 md:flex-row md:items-start md:justify-center">
     <Tabs.Root value="static" class="w-full md:max-w-md">
       <Tabs.List>
         <Tabs.Trigger class="cursor-pointer" value="static">Static</Tabs.Trigger>
@@ -71,7 +73,9 @@
         <Card.Root>
           <Card.Header>
             <Card.Title>Animated Prefab Generation</Card.Title>
-            <Card.Description>Generate animated prefabs from your animated pixel art!</Card.Description>
+            <Card.Description>
+              Generate animated prefabs from your animated pixel art!
+            </Card.Description>
           </Card.Header>
           <Card.Content>
             <AnimatedGenerationForm onSubmit={onFormSubmitted} />
@@ -100,8 +104,9 @@
 
   <footer class="mt-auto">
     <Separator />
-    <p class="text-center text-sm text-muted-foreground py-4">
-      Made by Reimnop and enchart.<br>
+    <p class="py-4 text-center text-sm text-muted-foreground">
+      Made by Reimnop and enchart.
+      <br />
       <a class="underline" href="https://github.com/Reimnop/sparite">Source code</a>
     </p>
   </footer>

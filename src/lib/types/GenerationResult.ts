@@ -1,6 +1,6 @@
 import type { RectImage } from "$lib/algo/RectImage";
-import type { Alignment } from "$lib/Alignment";
-import type { PrefabType } from "$lib/PrefabType";
+import type { Alignment } from "./Alignment";
+import type { PrefabType } from "./PrefabType";
 
 export interface GenerationResult {
   prefabName: string;
@@ -8,10 +8,10 @@ export interface GenerationResult {
   prefabType: PrefabType;
   pixelsPerUnit: number;
   lifetime: number;
-	depth: number;
+  depth: number;
   horizontalAlignment: Alignment;
   verticalAlignment: Alignment;
-	useHitObjects: boolean;
+  useHitObjects: boolean;
   speed: number;
   looped: boolean;
   rectImage: RectImage;

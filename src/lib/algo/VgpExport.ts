@@ -11,14 +11,14 @@ enum ObjectType {
 type Vec2 = [number, number];
 
 export interface PrefabRect {
-	positions: Keyframe<Vec2>[];
-	sizes: Keyframe<Vec2>[];
-	colors: Keyframe<IndexedColor>[];
+  positions: Keyframe<Vec2>[];
+  sizes: Keyframe<Vec2>[];
+  colors: Keyframe<IndexedColor>[];
 }
 
 export interface Keyframe<T> {
-	time: number;
-	value: T;
+  time: number;
+  value: T;
 }
 
 export function createPrefab(
@@ -47,7 +47,7 @@ function createPrefabObjects(
   depth: number,
   hit: boolean,
   prefabRects: PrefabRect[],
-  nextId: () => string,
+  nextId: () => string
 ): PrefabObject[] {
   const parentObject: PrefabObject = createPrefabObject(
     nextId(),
@@ -64,10 +64,10 @@ function createPrefabObjects(
   );
 
   const rectObjects = prefabRects.map((rect, i) => {
-    const positions: Keyframe<Vec2>[] = rect.positions.map(pos => ({
-			time: pos.time,
-			value: [pos.value[0], -pos.value[1]]
-		}));
+    const positions: Keyframe<Vec2>[] = rect.positions.map((pos) => ({
+      time: pos.time,
+      value: [pos.value[0], -pos.value[1]]
+    }));
     const origin: PrefabObjectOrigin = { x: 0.5, y: -0.5 };
 
     return createPrefabObject(
@@ -108,11 +108,11 @@ function createPrefabObject(
 
   const posEvent: PrefabObjectEvent = {
     k: [
-      ...positions.map(pos => ({
-				t: pos.time,
-				ev: [pos.value[0], pos.value[1]],
-				ct: "Instant"
-			}))
+      ...positions.map((pos) => ({
+        t: pos.time,
+        ev: [pos.value[0], pos.value[1]],
+        ct: "Instant"
+      }))
     ]
   };
 
@@ -122,11 +122,11 @@ function createPrefabObject(
 
   const scaEvent: PrefabObjectEvent = {
     k: [
-      ...scales.map(sca => ({
-				t: sca.time,
-				ev: [sca.value[0], sca.value[1]],
-				ct: "Instant"
-			}))
+      ...scales.map((sca) => ({
+        t: sca.time,
+        ev: [sca.value[0], sca.value[1]],
+        ct: "Instant"
+      }))
     ]
   };
 
@@ -145,13 +145,12 @@ function createPrefabObject(
 
   const colEvent: PrefabObjectEvent = {
     k: [
-      ...colors.map(col => ({
-				t: col.time,
-				ev: col.value.opacity === 1 
-          ? [col.value.index]
-          : [col.value.index, col.value.opacity * 100], 
-				ct: "Instant"
-			}))
+      ...colors.map((col) => ({
+        t: col.time,
+        ev:
+          col.value.opacity === 1 ? [col.value.index] : [col.value.index, col.value.opacity * 100],
+        ct: "Instant"
+      }))
     ]
   };
 
@@ -181,7 +180,10 @@ function createPrefabObject(
   return obj;
 }
 
-function optimizeKeyframes<T>(keyframes: Keyframe<T>[], comparator: (a: T, b: T) => boolean): Keyframe<T>[] {
+function optimizeKeyframes<T>(
+  keyframes: Keyframe<T>[],
+  comparator: (a: T, b: T) => boolean
+): Keyframe<T>[] {
   if (keyframes.length === 0) {
     return [];
   }

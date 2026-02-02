@@ -37,9 +37,9 @@ export function createIndexedImage(rawImage: RawImage): IndexedImage {
   });
 
   // create indexed frames
-	const indexedFrames: IndexedImageFrame[] = frames.map(frame =>
-		createIndexedImageFrame(frame, width, height, paletteMap)
-	);
+  const indexedFrames: IndexedImageFrame[] = frames.map((frame) =>
+    createIndexedImageFrame(frame, width, height, paletteMap)
+  );
 
   return {
     width,
@@ -78,12 +78,16 @@ function createPalette(frames: RawImageFrame[]): ColorRgb[] {
   return palette;
 }
 
-function accumulatePaletteMap(color: ColorRgb, paletteMap: Map<number, number>, palette: ColorRgb[]) {
-	const colorKey = getColorRgbKey(color);
-	if (!paletteMap.has(colorKey)) {
-		paletteMap.set(colorKey, palette.length);
-		palette.push(color);
-	}
+function accumulatePaletteMap(
+  color: ColorRgb,
+  paletteMap: Map<number, number>,
+  palette: ColorRgb[]
+) {
+  const colorKey = getColorRgbKey(color);
+  if (!paletteMap.has(colorKey)) {
+    paletteMap.set(colorKey, palette.length);
+    palette.push(color);
+  }
 }
 
 function createIndexedImageFrame(
@@ -92,10 +96,10 @@ function createIndexedImageFrame(
   height: number,
   paletteMap: Map<number, number>
 ): IndexedImageFrame {
-	const length = width * height * 4;
-	if (frame.data.length !== length) {
-		throw new Error("RawImageFrame data length does not match width and height");
-	}
+  const length = width * height * 4;
+  if (frame.data.length !== length) {
+    throw new Error("RawImageFrame data length does not match width and height");
+  }
 
   const pixels = new Array2D<IndexedPixel>(width, height, null);
   for (let y = 0; y < height; y++) {
@@ -123,5 +127,5 @@ function createIndexedImageFrame(
       pixels.set(x, y, { index, opacity: a / 255 });
     }
   }
-	return { pixels, delay: frame.delay };
+  return { pixels, delay: frame.delay };
 }

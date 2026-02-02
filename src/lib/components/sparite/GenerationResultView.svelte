@@ -1,22 +1,23 @@
 <script lang="ts">
   import { getColorHex, type ColorRgb } from "$lib/algo/Color";
+  import type { ColoredRect } from "$lib/algo/Rect";
+  import type { RectImage, RectImageFrame } from "$lib/algo/RectImage";
+  import { createPrefab, type PrefabRect } from "$lib/algo/VgpExport";
+  import { Alignment } from "$lib/types";
   import Button from "$lib/components/ui/button/button.svelte";
+  import Separator from "$lib/components/ui/separator/separator.svelte";
+  import { SortableList, sortItems } from "@rodrigodagostino/svelte-sortable-list";
   import { onMount } from "svelte";
   import type { GenerationResult } from "$lib/types/GenerationResult";
-  import { createPrefab, type PrefabRect } from "$lib/algo/VgpExport";
-  import Separator from "$lib/components/ui/separator/separator.svelte";
-  import type { RectImage, RectImageFrame } from "$lib/algo/RectImage";
-  import { Alignment } from "$lib/types/Alignment";
-  import type { ColoredRect } from "$lib/algo/Rect";
   import { toast } from "svelte-sonner";
 
   import NoColor from "$lib/icons/no-color.svg";
-  import ArrowUp from "$lib/icons/arrow-up.svg";
-  import ArrowDown from "$lib/icons/arrow-down.svg";
+  import Copy from "@lucide/svelte/icons/copy";
+  import { SvelteMap } from "svelte/reactivity";
 
   interface ThemeColor {
     index: number;
-    color: ColorRgb;
+    color: ColorRgb | null;
   }
 
   interface Props {
@@ -27,7 +28,7 @@
   let rectImage = $derived(result.rectImage);
   let objectCount = $derived(determineObjectCount(rectImage.frames));
 
-  let colors: (ThemeColor | null)[] = $state([]);
+  let colors: ThemeColor[] = $state([]);
 
   onMount(() => {
     let i = 0;
@@ -35,19 +36,21 @@
       colors.push({ index: i, color: rectImage.palette[i] });
     }
     for (; i < 9; i++) {
-      colors.push(null);
+      colors.push({ index: i, color: null });
     }
   });
 
-  function drawGenerationOnCanvas(canvas: HTMLCanvasElement, { rectImage, frameIndex }: { rectImage: RectImage, frameIndex: number }) {
+  function drawGenerationOnCanvas(
+    canvas: HTMLCanvasElement,
+    { rectImage, frameIndex }: { rectImage: RectImage; frameIndex: number }
+  ) {
     const scaleFactor = 4; // scale up for better visibility
 
     canvas.width = rectImage.width * scaleFactor;
     canvas.height = rectImage.height * scaleFactor;
 
     const ctx = canvas.getContext("2d");
-    if (!ctx) 
-      return;
+    if (!ctx) return;
 
     // clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -61,7 +64,12 @@
     for (const rect of frame.rects) {
       const color = rectImage.palette[rect.color.index];
       ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${rect.color.opacity})`;
-      ctx.fillRect(rect.x * scaleFactor, rect.y * scaleFactor, rect.width * scaleFactor, rect.height * scaleFactor);
+      ctx.fillRect(
+        rect.x * scaleFactor,
+        rect.y * scaleFactor,
+        rect.width * scaleFactor,
+        rect.height * scaleFactor
+      );
     }
   }
 
@@ -79,7 +87,8 @@
     }
 
     // loop through every frame
-    let time = 0, currentFrameIndex = 0;
+    let time = 0,
+      currentFrameIndex = 0;
     while (time < result.lifetime) {
       const coloredRects = postProcessRectImageFrame(
         rectImage,
@@ -107,7 +116,7 @@
       }
 
       time += rectImage.frames[currentFrameIndex].delay / 1000;
-      
+
       // advance frame index
       currentFrameIndex++;
       if (currentFrameIndex >= rectImage.frames.length) {
@@ -117,7 +126,7 @@
         currentFrameIndex = 0;
       }
     }
-    
+
     const filename = `${normalizeFileName(result.prefabName)}.vgp`;
     const prefab = createPrefab(
       result.prefabName,
@@ -195,7 +204,7 @@
   }
 
   function getColorIndexMap(): Map<number, number> {
-    const colorIndexMap: Map<number, number> = new Map();
+    const colorIndexMap: Map<number, number> = new SvelteMap();
     for (let i = 0; i < colors.length; i++) {
       const currentThemeColor = colors[i];
       if (currentThemeColor) {
@@ -229,24 +238,19 @@
     toast(`Copied ${text} to clipboard!`);
   }
 
-  function moveColorUp(index: number) {
-    if (index <= 0) return;
-
-    const temp = colors[index - 1];
-    colors[index - 1] = colors[index];
-    colors[index] = temp;
-  }
-
-  function moveColorDown(index: number) {
-    if (index >= colors.length - 1) return;
-
-    const temp = colors[index + 1];
-    colors[index + 1] = colors[index];
-    colors[index] = temp;
+  function handleDragEnd(e: SortableList.RootEvents["ondragend"]) {
+    const { draggedItemIndex, targetItemIndex, isCanceled } = e;
+    if (
+      !isCanceled &&
+      typeof targetItemIndex === "number" &&
+      draggedItemIndex !== targetItemIndex
+    ) {
+      colors = sortItems(colors, draggedItemIndex, targetItemIndex);
+    }
   }
 
   function determineObjectCount(frames: RectImageFrame[]): number {
-    return Math.max(...frames.map(frame => frame.rects.length));
+    return Math.max(...frames.map((frame) => frame.rects.length));
   }
 </script>
 
@@ -256,10 +260,11 @@
 <Separator class="my-4" />
 
 <div class="font-semibold">Prefab Info</div>
-<div class="flex gap-2 items-center flex-wrap">
+<div class="flex flex-wrap items-center gap-2">
   <canvas
-    class="bg-transparent max-h-32 max-w-48 h-full"
-    use:drawGenerationOnCanvas={{ rectImage, frameIndex: 0 }}></canvas>
+    class="h-full max-h-32 max-w-48 bg-transparent"
+    use:drawGenerationOnCanvas={{ rectImage, frameIndex: 0 }}
+  ></canvas>
 
   <table class="text-sm text-muted-foreground">
     <tbody>
@@ -305,44 +310,51 @@
 <Separator class="my-4" />
 
 <div class="font-semibold">Theme</div>
-<p class="text-sm text-muted-foreground">Click to copy to clipboard. Reorder if necessary.</p>
+<p class="pb-4 text-sm text-muted-foreground">Click to copy to clipboard. Reorder if necessary.</p>
 
-<div>
-  {#each colors as color, i}
-    <div class="h-12 py-1.5 w-full flex items-center gap-2">
-      <div class="h-full grid grid-rows-2 place-items-center">
-        <button class="h-2 w-4 cursor-pointer" onclick={() => moveColorUp(i)}>
-          <img src={ArrowUp} alt="Move up" />
-        </button>
-        <button class="h-2 w-4 cursor-pointer" onclick={() => moveColorDown(i)}>
-          <img src={ArrowDown} alt="Move down" />
-        </button>
-      </div>
-      {#if color}
-        <div class="w-full">
-          <Button
-            variant="outline"
-            class="w-full cursor-pointer justify-start"
-            onclick={() => copyToClipboard(getColorHex(color.color))}
-          >
+<div class="grid grid-cols-[min-content_minmax(0,1fr)] gap-3.5">
+  <div class="grid gap-3">
+    {#each colors as color, i (color.index)}
+      <div class="flex h-12 items-center justify-center font-mono">{i + 1}</div>
+    {/each}
+  </div>
+  <SortableList.Root ondragend={handleDragEnd}>
+    {#each colors as color, i (String(color.index))}
+      <SortableList.Item
+        class="flex h-12 items-center justify-between rounded-md border border-border bg-muted data-[is-ghost=false]:data-[drag-state*='ptr']:opacity-0"
+        id={String(color.index)}
+        index={i}
+      >
+        <div class="flex items-center gap-2.5 pl-3">
+          {#if color.color}
             <div
-              class="-ml-2 h-6 w-6 rounded-sm border border-muted-foreground/50"
+              class="size-6 rounded-sm"
               style="background-color: {getColorHex(color.color)};"
             ></div>
             <span class="font-mono">{getColorHex(color.color)}</span>
-          </Button>
+          {:else}
+            <img class="size-6 rounded-sm" src={NoColor} alt="No color" />
+            <span>No color</span>
+          {/if}
         </div>
-      {:else}
-        <img
-          class="ml-2 h-6 w-6 rounded-sm border border-muted-foreground/50 bg-transparent"
-          src={NoColor}
-          alt="No color"
-        />
-      {/if}
-    </div>
-  {/each}
+        <div class="flex items-center">
+          {#if color.color}
+            <button
+              class="cursor-pointer rounded-sm border border-border bg-card p-2 transition-colors hover:bg-card/50"
+              onclick={() => copyToClipboard(getColorHex(color.color!))}
+            >
+              <Copy class="size-4" />
+            </button>
+          {/if}
+          <SortableList.ItemHandle class="p-4!" />
+        </div>
+      </SortableList.Item>
+    {/each}
+  </SortableList.Root>
 </div>
 
 <Separator class="my-4" />
 
-<Button class="w-full cursor-pointer" onclick={onDownloadButtonClicked}>Export &amp; Download Prefab</Button>
+<Button class="w-full cursor-pointer" onclick={onDownloadButtonClicked}>
+  Export &amp; Download Prefab
+</Button>
