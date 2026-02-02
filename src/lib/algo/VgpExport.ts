@@ -60,7 +60,7 @@ function createPrefabObjects(
     depth,
     [{ time: 0, value: [0, 0] }],
     [{ time: 0, value: [1, 1] }],
-    [{ time: 0, value: { index: 0, opacity: 100 } }]
+    [{ time: 0, value: { index: 0, opacity: 1 } }]
   );
 
   const rectObjects = prefabRects.map((rect, i) => {
