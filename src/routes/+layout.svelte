@@ -3,6 +3,7 @@
   import favicon from "$lib/assets/favicon.png";
   import { ModeWatcher } from "mode-watcher";
   import * as Tooltip from "$lib/components/ui/tooltip/index.js";
+  import { Toaster } from "$lib/components/ui/sonner/index.js";
 
   let { children } = $props();
 </script>
@@ -32,6 +33,8 @@
 </svelte:head>
 
 <ModeWatcher />
+
+<Toaster />
 
 <Tooltip.Provider>
   {@render children()}

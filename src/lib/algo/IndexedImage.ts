@@ -1,10 +1,11 @@
+import { Array2D } from "$lib/data/Array2D";
 import { type ColorRgb, type IndexedColor, getColorRgbKey, indexedColorEquals } from "./Color";
 import type { RawImage, RawImageFrame } from "./RawImage";
 
 export type IndexedPixel = IndexedColor | null;
 
 export interface IndexedImageFrame {
-  pixels: IndexedPixel[][]; // row-major matrix of pixels, pixels[y][x]
+  pixels: Array2D<IndexedPixel>;
   delay: number; // in milliseconds
 }
 
@@ -96,9 +97,8 @@ function createIndexedImageFrame(
 		throw new Error("RawImageFrame data length does not match width and height");
 	}
 
-  const pixels: IndexedPixel[][] = [];
+  const pixels = new Array2D<IndexedPixel>(width, height, null);
   for (let y = 0; y < height; y++) {
-    const row: IndexedPixel[] = [];
     for (let x = 0; x < width; x++) {
       const i = (y * width + x) * 4;
       const r = frame.data[i];
@@ -107,7 +107,7 @@ function createIndexedImageFrame(
       const a = frame.data[i + 3];
 
       if (a === 0) {
-        row.push(null); // transparent pixel
+        pixels.set(x, y, null); // transparent pixel
         continue;
       }
 
@@ -116,13 +116,12 @@ function createIndexedImageFrame(
       const index = paletteMap.get(colorKey);
 
       if (index === undefined) {
-        row.push(null); // should not happen
+        pixels.set(x, y, null); // should not happen
         continue;
       }
 
-      row.push({ index, opacity: a / 255 });
+      pixels.set(x, y, { index, opacity: a / 255 });
     }
-    pixels.push(row);
   }
 	return { pixels, delay: frame.delay };
 }

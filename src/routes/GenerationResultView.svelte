@@ -8,6 +8,7 @@
   import type { RectImage, RectImageFrame } from "$lib/algo/RectImage";
   import { Alignment } from "$lib/Alignment";
   import type { ColoredRect } from "$lib/algo/Rect";
+  import { toast } from "svelte-sonner";
 
   import NoColor from "$lib/icons/no-color.svg";
   import ArrowUp from "$lib/icons/arrow-up.svg";
@@ -225,6 +226,7 @@
 
   function copyToClipboard(text: string) {
     navigator.clipboard.writeText(text);
+    toast(`Copied ${text} to clipboard!`);
   }
 
   function moveColorUp(index: number) {
