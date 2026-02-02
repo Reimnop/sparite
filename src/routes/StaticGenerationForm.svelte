@@ -1,31 +1,32 @@
 <script lang="ts">
-  import { Input } from "$lib/components/ui/input";
-  import * as Select from "$lib/components/ui/select";
-  import { Button } from "$lib/components/ui/button";
-  import * as RadioGroup from "$lib/components/ui/radio-group";
-  import * as Field from "$lib/components/ui/field";
-  import * as Tooltip from "$lib/components/ui/tooltip/index.js";
-  import Checkbox from "$lib/components/ui/checkbox/checkbox.svelte";
-  import { PrefabType } from "$lib/PrefabType";
-  import { FormName } from "$lib/FormName";
-  import { Textarea } from "$lib/components/ui/textarea";
+  import type { RawImage } from "$lib/algo/RawImage";
   import { Alignment } from "$lib/Alignment";
+  import { Button } from "$lib/components/ui/button";
+  import Checkbox from "$lib/components/ui/checkbox/checkbox.svelte";
+  import * as Field from "$lib/components/ui/field";
+  import { Input } from "$lib/components/ui/input";
+  import * as RadioGroup from "$lib/components/ui/radio-group";
+  import * as Select from "$lib/components/ui/select";
+  import { Textarea } from "$lib/components/ui/textarea";
+  import * as Tooltip from "$lib/components/ui/tooltip/index.js";
+  import { FormName } from "$lib/FormName";
+  import { PrefabType } from "$lib/PrefabType";
   import type { StaticGenerationFormData } from "./GenerationFormData";
   import IconRadioGroupItem from "./IconRadioGroupItem.svelte";
-  import type { RawImage } from "$lib/algo/RawImage";
 
-  import LeftUnchecked from "$lib/icons/alignment/left-unchecked.svg";
-  import LeftChecked from "$lib/icons/alignment/left-checked.svg";
-  import CenterUnchecked from "$lib/icons/alignment/center-unchecked.svg";
-  import CenterChecked from "$lib/icons/alignment/center-checked.svg";
-  import RightUnchecked from "$lib/icons/alignment/right-unchecked.svg";
-  import RightChecked from "$lib/icons/alignment/right-checked.svg";
-  import TopUnchecked from "$lib/icons/alignment/top-unchecked.svg";
-  import TopChecked from "$lib/icons/alignment/top-checked.svg";
-  import MiddleUnchecked from "$lib/icons/alignment/middle-unchecked.svg";
-  import MiddleChecked from "$lib/icons/alignment/middle-checked.svg";
-  import BottomUnchecked from "$lib/icons/alignment/bottom-unchecked.svg";
   import BottomChecked from "$lib/icons/alignment/bottom-checked.svg";
+  import BottomUnchecked from "$lib/icons/alignment/bottom-unchecked.svg";
+  import CenterChecked from "$lib/icons/alignment/center-checked.svg";
+  import CenterUnchecked from "$lib/icons/alignment/center-unchecked.svg";
+  import LeftChecked from "$lib/icons/alignment/left-checked.svg";
+  import LeftUnchecked from "$lib/icons/alignment/left-unchecked.svg";
+  import MiddleChecked from "$lib/icons/alignment/middle-checked.svg";
+  import MiddleUnchecked from "$lib/icons/alignment/middle-unchecked.svg";
+  import RightChecked from "$lib/icons/alignment/right-checked.svg";
+  import RightUnchecked from "$lib/icons/alignment/right-unchecked.svg";
+  import TopChecked from "$lib/icons/alignment/top-checked.svg";
+  import TopUnchecked from "$lib/icons/alignment/top-unchecked.svg";
+  import CircleQuestionMark from "@lucide/svelte/icons/circle-question-mark";
 
   const prefabTypeNames: Record<PrefabType, string> = {
     [PrefabType.Character]: "Character",
@@ -58,11 +59,11 @@
     onSubmit: (formData: StaticGenerationFormData) => void;
   }
 
-  let { 
-    onSubmit 
-  } : Props = $props();
+  let { onSubmit }: Props = $props();
 
-  async function onFormSubmitted(event: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement }) {
+  async function onFormSubmitted(
+    event: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement }
+  ) {
     event.preventDefault();
 
     const formData = new FormData(event.currentTarget);
@@ -110,7 +111,7 @@
         const canvas = document.createElement("canvas");
         canvas.width = image.width;
         canvas.height = image.height;
-        
+
         const ctx = canvas.getContext("2d");
 
         if (!ctx) {
@@ -149,7 +150,9 @@
         <Field.Field>
           <Field.Label>Prefab Type</Field.Label>
           <Select.Root type="single" name={FormName.PrefabType} bind:value={currentPrefabTypeStr}>
-            <Select.Trigger>{prefabTypeNames[parseInt(currentPrefabTypeStr, 10) as PrefabType]}</Select.Trigger>
+            <Select.Trigger
+              >{prefabTypeNames[parseInt(currentPrefabTypeStr, 10) as PrefabType]}</Select.Trigger
+            >
             <Select.Content>
               {#each Object.entries(prefabTypeNames) as [key, value]}
                 <Select.Item value={key.toString()}>{value}</Select.Item>
@@ -168,12 +171,23 @@
         <Tooltip.Root>
           <Tooltip.Trigger>
             <Field.Field>
-              <Field.Label>Pixels Per Unit</Field.Label>
-              <Input type="number" step="0.01" name={FormName.PixelsPerUnit} bind:value={currentPixelsPerUnit} />
+              <div class="flex items-center">
+                <Field.Label>Pixels Per Unit</Field.Label>
+                <CircleQuestionMark class="ml-auto size-4 text-muted-foreground" />
+              </div>
+              <Input
+                type="number"
+                step="0.01"
+                name={FormName.PixelsPerUnit}
+                bind:value={currentPixelsPerUnit}
+              />
             </Field.Field>
           </Tooltip.Trigger>
           <Tooltip.Content>
-            <p class="text-center">Amount of pixels to fit in one in-game unit.<br>Higher values result in smaller objects.</p>
+            <p class="text-center">
+              Amount of pixels to fit in one in-game unit.<br />Higher values result in smaller
+              objects.
+            </p>
           </Tooltip.Content>
         </Tooltip.Root>
 
@@ -191,18 +205,56 @@
       <Field.Group class="grid gap-2 sm:grid-cols-2">
         <Field.Set>
           <Field.Label>Horizontal Alignment</Field.Label>
-          <RadioGroup.Root class="grid grid-cols-3 gap-2 w-fit" name={FormName.HorizontalAlignment} bind:value={currentHorizontalAlignment}>
-            <IconRadioGroupItem class="cursor-pointer w-6 h-6" checkedIcon={LeftChecked} uncheckedIcon={LeftUnchecked} value={Alignment.Left} />
-            <IconRadioGroupItem class="cursor-pointer w-6 h-6" checkedIcon={CenterChecked} uncheckedIcon={CenterUnchecked} value={Alignment.Center} />
-            <IconRadioGroupItem class="cursor-pointer w-6 h-6" checkedIcon={RightChecked} uncheckedIcon={RightUnchecked} value={Alignment.Right} />
+          <RadioGroup.Root
+            class="grid w-fit grid-cols-3 gap-2"
+            name={FormName.HorizontalAlignment}
+            bind:value={currentHorizontalAlignment}
+          >
+            <IconRadioGroupItem
+              class="h-6 w-6 cursor-pointer"
+              checkedIcon={LeftChecked}
+              uncheckedIcon={LeftUnchecked}
+              value={Alignment.Left}
+            />
+            <IconRadioGroupItem
+              class="h-6 w-6 cursor-pointer"
+              checkedIcon={CenterChecked}
+              uncheckedIcon={CenterUnchecked}
+              value={Alignment.Center}
+            />
+            <IconRadioGroupItem
+              class="h-6 w-6 cursor-pointer"
+              checkedIcon={RightChecked}
+              uncheckedIcon={RightUnchecked}
+              value={Alignment.Right}
+            />
           </RadioGroup.Root>
         </Field.Set>
         <Field.Set>
           <Field.Label>Vertical Alignment</Field.Label>
-          <RadioGroup.Root class="grid grid-cols-3 gap-2 w-fit" name={FormName.VerticalAlignment} bind:value={currentVerticalAlignment}>
-            <IconRadioGroupItem class="cursor-pointer w-6 h-6" checkedIcon={TopChecked} uncheckedIcon={TopUnchecked} value={Alignment.Top} />
-            <IconRadioGroupItem class="cursor-pointer w-6 h-6" checkedIcon={MiddleChecked} uncheckedIcon={MiddleUnchecked} value={Alignment.Middle} />
-            <IconRadioGroupItem class="cursor-pointer w-6 h-6" checkedIcon={BottomChecked} uncheckedIcon={BottomUnchecked} value={Alignment.Bottom} />
+          <RadioGroup.Root
+            class="grid w-fit grid-cols-3 gap-2"
+            name={FormName.VerticalAlignment}
+            bind:value={currentVerticalAlignment}
+          >
+            <IconRadioGroupItem
+              class="h-6 w-6 cursor-pointer"
+              checkedIcon={TopChecked}
+              uncheckedIcon={TopUnchecked}
+              value={Alignment.Top}
+            />
+            <IconRadioGroupItem
+              class="h-6 w-6 cursor-pointer"
+              checkedIcon={MiddleChecked}
+              uncheckedIcon={MiddleUnchecked}
+              value={Alignment.Middle}
+            />
+            <IconRadioGroupItem
+              class="h-6 w-6 cursor-pointer"
+              checkedIcon={BottomChecked}
+              uncheckedIcon={BottomUnchecked}
+              value={Alignment.Bottom}
+            />
           </RadioGroup.Root>
         </Field.Set>
       </Field.Group>
