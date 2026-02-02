@@ -2,15 +2,15 @@
   import * as Tabs from "$lib/components/ui/tabs/index.js";
   import * as Card from "$lib/components/ui/card";
   import { createIndexedImage } from "$lib/algo/IndexedImage";
-  import type { GenerationFormData } from "./GenerationFormData";
-  import StaticGenerationForm from "./StaticGenerationForm.svelte";
-  import type { GenerationResult } from "./GenerationResult";
-  import GenerationResultView from "./GenerationResultView.svelte";
+  import type { GenerationFormData } from "$lib/types/GenerationFormData";
+  import StaticGenerationForm from "$lib/components/sparite/StaticGenerationForm.svelte";
+  import type { GenerationResult } from "$lib/types/GenerationResult";
+  import GenerationResultView from "$lib/components/sparite/GenerationResultView.svelte";
   import Separator from "$lib/components/ui/separator/separator.svelte";
   import type { RectImage } from "$lib/algo/RectImage";
   import { convertIndexedImageToRectImage } from "$lib/algo/Processor";
   import type { RawImage } from "$lib/algo/RawImage";
-  import AnimatedGenerationForm from "./AnimatedGenerationForm.svelte";
+  import AnimatedGenerationForm from "$lib/components/sparite/AnimatedGenerationForm.svelte";
 
   let generationResult: GenerationResult | null = $state(null);
 

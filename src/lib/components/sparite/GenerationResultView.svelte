@@ -3,15 +3,16 @@
   import type { ColoredRect } from "$lib/algo/Rect";
   import type { RectImage, RectImageFrame } from "$lib/algo/RectImage";
   import { createPrefab, type PrefabRect } from "$lib/algo/VgpExport";
-  import { Alignment } from "$lib/Alignment";
-  import Button, { buttonVariants } from "$lib/components/ui/button/button.svelte";
+  import { Alignment } from "$lib/types";
+  import Button from "$lib/components/ui/button/button.svelte";
   import Separator from "$lib/components/ui/separator/separator.svelte";
   import { SortableList, sortItems } from "@rodrigodagostino/svelte-sortable-list";
   import { onMount } from "svelte";
-  import type { GenerationResult } from "./GenerationResult";
+  import type { GenerationResult } from "$lib/types/GenerationResult";
 
   import NoColor from "$lib/icons/no-color.svg";
   import Copy from "@lucide/svelte/icons/copy";
+  import { SvelteMap } from "svelte/reactivity";
 
   interface ThemeColor {
     index: number;
@@ -202,7 +203,7 @@
   }
 
   function getColorIndexMap(): Map<number, number> {
-    const colorIndexMap: Map<number, number> = new Map();
+    const colorIndexMap: Map<number, number> = new SvelteMap();
     for (let i = 0; i < colors.length; i++) {
       const currentThemeColor = colors[i];
       if (currentThemeColor) {
@@ -234,22 +235,6 @@
   function copyToClipboard(text: string) {
     navigator.clipboard.writeText(text);
   }
-
-  // function moveColorUp(index: number) {
-  //   if (index <= 0) return;
-
-  //   const temp = colors[index - 1];
-  //   colors[index - 1] = colors[index];
-  //   colors[index] = temp;
-  // }
-
-  // function moveColorDown(index: number) {
-  //   if (index >= colors.length - 1) return;
-
-  //   const temp = colors[index + 1];
-  //   colors[index + 1] = colors[index];
-  //   colors[index] = temp;
-  // }
 
   function handleDragEnd(e: SortableList.RootEvents["ondragend"]) {
     const { draggedItemIndex, targetItemIndex, isCanceled } = e;
@@ -365,42 +350,6 @@
     {/each}
   </SortableList.Root>
 </div>
-
-<!-- <div>
-  {#each colors as color, i}
-    <div class="h-12 py-1.5 w-full flex items-center gap-2">
-      <div class="h-full grid grid-rows-2 place-items-center">
-        <button class="h-2 w-4 cursor-pointer" onclick={() => moveColorUp(i)}>
-          <img src={ArrowUp} alt="Move up" />
-        </button>
-        <button class="h-2 w-4 cursor-pointer" onclick={() => moveColorDown(i)}>
-          <img src={ArrowDown} alt="Move down" />
-        </button>
-      </div>
-      {#if color}
-        <div class="w-full">
-          <Button
-            variant="outline"
-            class="w-full cursor-pointer justify-start"
-            onclick={() => copyToClipboard(getColorHex(color.color))}
-          >
-            <div
-              class="-ml-2 h-6 w-6 rounded-sm border border-muted-foreground/50"
-              style="background-color: {getColorHex(color.color)};"
-            ></div>
-            <span class="font-mono">{getColorHex(color.color)}</span>
-          </Button>
-        </div>
-      {:else}
-        <img
-          class="ml-2 h-6 w-6 rounded-sm border border-muted-foreground/50 bg-transparent"
-          src={NoColor}
-          alt="No color"
-        />
-      {/if}
-    </div>
-  {/each}
-</div> -->
 
 <Separator class="my-4" />
 
