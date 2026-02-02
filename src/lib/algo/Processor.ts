@@ -1,108 +1,127 @@
-import { indexedPixelEquals, type IndexedImage } from "./IndexedImage";
-import type { ColoredRect } from "./Rect";
+import { Array2D } from "$lib/data/Array2D";
+import { indexedPixelEquals, type IndexedImage, type IndexedPixel } from "./IndexedImage";
+import type { ColoredRect, Rect } from "./Rect";
 import type { RectImage } from "./RectImage";
 
 export function convertIndexedImageToRectImage(image: IndexedImage): RectImage {
-  const rectFrames = image.frames.map((frame, frameIndex) => {
-    const rects = convertIndexedImageToColoredRects(image, frameIndex);
-    return {
-      rects,
-      delay: frame.delay
-    };
-  });
-  return {
-    width: image.width,
-    height: image.height,
-    frames: rectFrames,
-    palette: image.palette
-  };
+	const rectFrames = image.frames.map(frame => {
+		const rects = convertIndexedImageToColoredRects(frame.pixels);
+		return {
+			rects,
+			delay: frame.delay
+		};
+	});
+	return {
+		width: image.width,
+		height: image.height,
+		frames: rectFrames,
+		palette: image.palette
+	};
 }
 
-function convertIndexedImageToColoredRects(image: IndexedImage, frameIndex: number): ColoredRect[] {
-  // convert image into rects
-  // using a greedy algorithm
-  const flags: boolean[][] = Array.from({ length: image.height }, () =>
-    new Array(image.width).fill(false)
-  );
+function convertIndexedImageToColoredRects(pixels: Array2D<IndexedPixel>): ColoredRect[] {
+	// convert image into rects
+	// using a greedy algorithm
+	const flags = new Array2D<boolean>(pixels.width, pixels.height, false);
 
-  const coloredRects: ColoredRect[] = [];
+	const result: ColoredRect[] = [];
 
-  for (let y = 0; y < image.height; y++) {
-    for (let x = 0; x < image.width; x++) {
-      // skip if already covered
-      if (flags[y][x]) {
+	for (let y = 0; y < pixels.height; y++) {
+		for (let x = 0; x < pixels.width; x++) {
+			// skip if already covered
+			if (flags.get(x, y)) {
+				continue;
+			}
+
+      const color = pixels.get(x, y);
+      
+      // skip transparent pixels
+      if (!color) {
+        flags.set(x, y, true);
         continue;
       }
 
-      let w = 1;
-      let h = 1;
+			// expand rect
+      const rect = expandRect(pixels, flags, x, y);
 
-      // expand on both direction until we can't anymore
-      while (canBeARect(image, frameIndex, flags, x, y, w + 1, h + 1)) {
-        w++;
-        h++;
-      }
+			// mark covered
+			markRectAsCovered(flags, rect);
 
-      // expand on width until we can't anymore
-      while (canBeARect(image, frameIndex, flags, x, y, w + 1, h)) {
-        w++;
-      }
+      // add to result
+			result.push({ ...rect, color });
+		}
+	}
 
-      // expand on height until we can't anymore
-      while (canBeARect(image, frameIndex, flags, x, y, w, h + 1)) {
-        h++;
-      }
+	return result;
+}
 
-      // mark covered
-      for (let yy = y; yy < y + h; yy++) {
-        for (let xx = x; xx < x + w; xx++) {
-          flags[yy][xx] = true;
-        }
-      }
-
-      const color = image.frames[frameIndex].pixels[y][x];
-      if (color) {
-        coloredRects.push({
-          x,
-          y,
-          width: w,
-          height: h,
-          color
-        });
-      }
+function markRectAsCovered(
+  flags: Array2D<boolean>,
+  rect: Rect
+): void {
+  for (let y = rect.y; y < rect.y + rect.height; y++) {
+    for (let x = rect.x; x < rect.x + rect.width; x++) {
+      flags.set(x, y, true);
     }
   }
+}
 
-  return coloredRects;
+function expandRect(
+  pixels: Array2D<IndexedPixel>,
+	flags: Array2D<boolean>,
+	x: number, 
+	y: number
+): Rect {
+  let width = 1, height = 1;
+
+  // expand on both directions
+  while (canBeARect(pixels, flags, x, y, width + 1, height + 1)) {
+    width++;
+    height++;
+  }
+
+  // expand width
+  while (canBeARect(pixels, flags, x, y, width + 1, height)) {
+    width++;
+  }
+
+  // expand height
+  while (canBeARect(pixels, flags, x, y, width, height + 1)) {
+    height++;
+  }
+
+  return {
+    x,
+    y,
+    width,
+    height
+  };
 }
 
 function canBeARect(
-  image: IndexedImage,
-  frameIndex: number,
-  flags: boolean[][],
-  x0: number,
-  y0: number,
-  w: number,
-  h: number
+	pixels: Array2D<IndexedPixel>,
+	flags: Array2D<boolean>,
+	x0: number,
+	y0: number,
+	w: number,
+	h: number
 ): boolean {
-  // check if we're in bounds
-  if (x0 + w > image.width || y0 + h > image.height) {
-    return false;
-  }
+	// check if we're in bounds
+	if (x0 + w > pixels.width || y0 + h > pixels.height) {
+		return false;
+	}
 
-  const frame = image.frames[frameIndex];
+	// check if all pixels are the same and not already covered
+	const firstPixel = pixels.get(x0, y0);
 
-  // check if all pixels are the same and not already covered
-  const firstPixel = frame.pixels[y0][x0];
-
-  for (let y = y0; y < y0 + h; y++) {
-    for (let x = x0; x < x0 + w; x++) {
-      const pixel = frame.pixels[y][x];
-      if (flags[y][x] || !indexedPixelEquals(pixel, firstPixel)) {
-        return false;
-      }
-    }
-  }
+	for (let y = y0; y < y0 + h; y++) {
+		for (let x = x0; x < x0 + w; x++) {
+			const pixel = pixels.get(x, y);
+			if (flags.get(x, y) || !indexedPixelEquals(pixel, firstPixel)) {
+				return false;
+			}
+		}
+	}
 
   return true;
 }
