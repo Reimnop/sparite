@@ -128,7 +128,12 @@
       prefabRects,
       Date.now()
     );
-    const prefabJson = JSON.stringify(prefab);
+    const prefabJson = JSON.stringify(prefab, (key, value) => {
+      if (typeof value === "number") {
+        return Math.round(value * 10000) / 10000; // round to 4 decimal places
+      }
+      return value;
+    });
     const textEncoder = new TextEncoder();
     const prefabData = textEncoder.encode(prefabJson);
     downloadData([prefabData], filename, "application/octet-stream");

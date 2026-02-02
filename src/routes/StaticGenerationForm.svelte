@@ -169,7 +169,7 @@
           <Tooltip.Trigger>
             <Field.Field>
               <Field.Label>Pixels Per Unit</Field.Label>
-              <Input type="number" name={FormName.PixelsPerUnit} bind:value={currentPixelsPerUnit} />
+              <Input type="number" step="0.01" name={FormName.PixelsPerUnit} bind:value={currentPixelsPerUnit} />
             </Field.Field>
           </Tooltip.Trigger>
           <Tooltip.Content>
@@ -179,12 +179,12 @@
 
         <Field.Field>
           <Field.Label>Lifetime</Field.Label>
-          <Input type="number" name={FormName.Lifetime} bind:value={currentLifetime} />
+          <Input type="number" step="0.01" name={FormName.Lifetime} bind:value={currentLifetime} />
         </Field.Field>
 
         <Field.Field>
           <Field.Label>Depth</Field.Label>
-          <Input type="number" name={FormName.Depth} bind:value={currentDepth} />
+          <Input type="number" step="0.01" name={FormName.Depth} bind:value={currentDepth} />
         </Field.Field>
       </Field.Group>
 

@@ -19,21 +19,21 @@ export function createIndexedImage(rawImage: RawImage): IndexedImage {
   const { width, height, frames } = rawImage;
 
   // create palette
+  const palette = createPalette(frames);
+
+  // sort palette by color key to ensure consistent ordering
+  palette.sort((a, b) => {
+    const keyA = getColorRgbKey(a);
+    const keyB = getColorRgbKey(b);
+    return keyA - keyB;
+  });
+
+  // create palette map
   const paletteMap = new Map<number, number>();
-  const palette: ColorRgb[] = [];
-	for (const frame of frames) {
-		for (let i = 0; i < frame.data.length; i += 4) {
-			const r = frame.data[i];
-			const g = frame.data[i + 1];
-			const b = frame.data[i + 2];
-			const a = frame.data[i + 3];
-			if (a === 0) {
-				continue; // transparent pixel
-			}
-			const color: ColorRgb = { r, g, b };
-			accumulatePaletteMap(color, paletteMap, palette);
-		}	
-	}
+  palette.forEach((color, index) => {
+    const colorKey = getColorRgbKey(color);
+    paletteMap.set(colorKey, index);
+  });
 
   // create indexed frames
 	const indexedFrames: IndexedImageFrame[] = frames.map(frame =>
@@ -56,6 +56,25 @@ export function indexedPixelEquals(p1: IndexedPixel, p2: IndexedPixel): boolean 
     return false;
   }
   return indexedColorEquals(p1, p2);
+}
+
+function createPalette(frames: RawImageFrame[]): ColorRgb[] {
+  const paletteMap = new Map<number, number>();
+  const palette: ColorRgb[] = [];
+  for (const frame of frames) {
+    for (let i = 0; i < frame.data.length; i += 4) {
+      const r = frame.data[i];
+      const g = frame.data[i + 1];
+      const b = frame.data[i + 2];
+      const a = frame.data[i + 3];
+      if (a === 0) {
+        continue; // transparent pixel
+      }
+      const color: ColorRgb = { r, g, b };
+      accumulatePaletteMap(color, paletteMap, palette);
+    }
+  }
+  return palette;
 }
 
 function accumulatePaletteMap(color: ColorRgb, paletteMap: Map<number, number>, palette: ColorRgb[]) {

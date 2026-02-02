@@ -1,4 +1,5 @@
 import type { Prefab, PrefabObject, PrefabObjectEvent, PrefabObjectOrigin } from "$lib/data/Vgp";
+import { intToId, mulberry32 } from "$lib/utils/random";
 import type { IndexedColor } from "./Color";
 
 enum ObjectType {
@@ -30,11 +31,14 @@ export function createPrefab(
   prefabRects: PrefabRect[],
   seed: number
 ): Prefab {
+  const generateRandomInt = mulberry32(seed);
+  const nextId = () => intToId(generateRandomInt());
+
   return {
     n: name,
     description,
     type,
-    objs: createPrefabObjects(lifetime, depth, hit, prefabRects, seed)
+    objs: createPrefabObjects(lifetime, depth, hit, prefabRects, nextId)
   };
 }
 
@@ -43,10 +47,10 @@ function createPrefabObjects(
   depth: number,
   hit: boolean,
   prefabRects: PrefabRect[],
-  seed: number
+  nextId: () => string,
 ): PrefabObject[] {
   const parentObject: PrefabObject = createPrefabObject(
-    generateId(0, seed),
+    nextId(),
     null,
     "root",
     0,
@@ -60,7 +64,6 @@ function createPrefabObjects(
   );
 
   const rectObjects = prefabRects.map((rect, i) => {
-    const id = generateId(i + 1, seed);
     const positions: Keyframe<Vec2>[] = rect.positions.map(pos => ({
 			time: pos.time,
 			value: [pos.value[0], -pos.value[1]]
@@ -68,7 +71,7 @@ function createPrefabObjects(
     const origin: PrefabObjectOrigin = { x: 0.5, y: -0.5 };
 
     return createPrefabObject(
-      id,
+      nextId(),
       parentObject.id,
       `rect_${i}`,
       1,
@@ -98,6 +101,11 @@ function createPrefabObject(
   scales: Keyframe<Vec2>[],
   colors: Keyframe<IndexedColor>[]
 ): PrefabObject {
+  // remove redundant keyframes
+  positions = optimizeKeyframes(positions, (a, b) => a[0] === b[0] && a[1] === b[1]);
+  scales = optimizeKeyframes(scales, (a, b) => a[0] === b[0] && a[1] === b[1]);
+  colors = optimizeKeyframes(colors, (a, b) => a.index === b.index && a.opacity === b.opacity);
+
   const posEvent: PrefabObjectEvent = {
     k: [
       ...positions.map(pos => ({
@@ -108,6 +116,10 @@ function createPrefabObject(
     ]
   };
 
+  if (posEvent.k.length > 0) {
+    delete posEvent.k[0].ct; // first keyframe ct is ignored
+  }
+
   const scaEvent: PrefabObjectEvent = {
     k: [
       ...scales.map(sca => ({
@@ -117,6 +129,10 @@ function createPrefabObject(
 			}))
     ]
   };
+
+  if (scaEvent.k.length > 0) {
+    delete scaEvent.k[0].ct; // first keyframe ct is ignored
+  }
 
   const rotEvent: PrefabObjectEvent = {
     k: [
@@ -131,11 +147,17 @@ function createPrefabObject(
     k: [
       ...colors.map(col => ({
 				t: col.time,
-				ev: [col.value.index, col.value.opacity * 100],
+				ev: col.value.opacity === 1 
+          ? [col.value.index]
+          : [col.value.index, col.value.opacity * 100], 
 				ct: "Instant"
 			}))
     ]
   };
+
+  if (colEvent.k.length > 0) {
+    delete colEvent.k[0].ct; // first keyframe ct is ignored
+  }
 
   const obj: PrefabObject = {
     id,
@@ -159,6 +181,17 @@ function createPrefabObject(
   return obj;
 }
 
-function generateId(i: number, seed: number): string {
-  return `${seed}_${i}`;
+function optimizeKeyframes<T>(keyframes: Keyframe<T>[], comparator: (a: T, b: T) => boolean): Keyframe<T>[] {
+  if (keyframes.length === 0) {
+    return [];
+  }
+  const result: Keyframe<T>[] = [keyframes[0]];
+  for (let i = 1; i < keyframes.length; i++) {
+    const current = keyframes[i];
+    const last = result[result.length - 1];
+    if (!comparator(current.value, last.value)) {
+      result.push(current);
+    }
+  }
+  return result;
 }
