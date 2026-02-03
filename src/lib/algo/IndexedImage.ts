@@ -1,5 +1,5 @@
 import { Array2D } from "$lib/data/Array2D";
-import { type ColorRgb, type IndexedColor, getColorRgbKey, indexedColorEquals } from "./Color";
+import { type ColorRgb, type IndexedColor, getColorRgbKey, indexedColorEquals, rgbToOklch } from "./Color";
 import type { RawImage, RawImageFrame } from "./RawImage";
 
 export type IndexedPixel = IndexedColor | null;
@@ -22,11 +22,20 @@ export function createIndexedImage(rawImage: RawImage): IndexedImage {
   // create palette
   const palette = createPalette(frames);
 
-  // sort palette by color key to ensure consistent ordering
+  // sort palette by oklch
   palette.sort((a, b) => {
-    const keyA = getColorRgbKey(a);
-    const keyB = getColorRgbKey(b);
-    return keyA - keyB;
+    const aOklch = rgbToOklch(a);
+    const bOklch = rgbToOklch(b);
+
+    if (aOklch.l !== bOklch.l) {
+      return aOklch.l - bOklch.l;
+    }
+
+    if (aOklch.c !== bOklch.c) {
+      return aOklch.c - bOklch.c;
+    }
+    
+    return aOklch.h - bOklch.h;
   });
 
   // create palette map
