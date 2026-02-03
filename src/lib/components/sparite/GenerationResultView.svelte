@@ -10,10 +10,13 @@
   import { onMount } from "svelte";
   import type { GenerationResult } from "$lib/types/GenerationResult";
   import { toast } from "svelte-sonner";
+  import { Input } from "$lib/components/ui/input";
+  import { SvelteMap } from "svelte/reactivity";
 
   import NoColor from "$lib/icons/no-color.svg";
   import Copy from "@lucide/svelte/icons/copy";
-  import { SvelteMap } from "svelte/reactivity";
+  import ChevronLeft from "@lucide/svelte/icons/chevron-left";
+  import ChevronRight from "@lucide/svelte/icons/chevron-right";
 
   interface ThemeColor {
     index: number;
@@ -25,10 +28,26 @@
   }
 
   let { result }: Props = $props();
+
+  let currentFramePreviewStr = $state("0");
+
   let rectImage = $derived(result.rectImage);
   let objectCount = $derived(determineObjectCount(rectImage.frames));
 
   let colors: ThemeColor[] = $state([]);
+
+  let previewWidth = $derived(rectImage.width);
+  let previewHeight = $derived(rectImage.height);
+  
+  let currentFramePreviewIndex = $state(0);
+  let currentFramePreviewRects = $derived(rectImage.frames[currentFramePreviewIndex].rects);
+
+  $effect(() => {
+    const parsed = parseInt(currentFramePreviewStr, 10);
+    if (!isNaN(parsed)) {
+      currentFramePreviewIndex = Math.min(Math.max(parsed, 0), rectImage.frames.length - 1);
+    }
+  });
 
   onMount(() => {
     let i = 0;
@@ -42,12 +61,12 @@
 
   function drawGenerationOnCanvas(
     canvas: HTMLCanvasElement,
-    { rectImage, frameIndex }: { rectImage: RectImage; frameIndex: number }
+    rects: ColoredRect[]
   ) {
     const scaleFactor = 4; // scale up for better visibility
 
-    canvas.width = rectImage.width * scaleFactor;
-    canvas.height = rectImage.height * scaleFactor;
+    canvas.width = previewWidth * scaleFactor;
+    canvas.height = previewHeight * scaleFactor;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
@@ -58,10 +77,8 @@
     // disable image smoothing
     ctx.imageSmoothingEnabled = false;
 
-    const frame = rectImage.frames[frameIndex];
-
     // draw each rect
-    for (const rect of frame.rects) {
+    for (const rect of rects) {
       const color = rectImage.palette[rect.color.index];
       ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${rect.color.opacity})`;
       ctx.fillRect(
@@ -252,6 +269,13 @@
   function determineObjectCount(frames: RectImageFrame[]): number {
     return Math.max(...frames.map((frame) => frame.rects.length));
   }
+
+  function advanceFrameIndex(offset: number) {
+    let newIndex = currentFramePreviewIndex + offset;
+    newIndex = Math.min(Math.max(newIndex, 0), rectImage.frames.length - 1);
+    currentFramePreviewIndex = newIndex;
+    currentFramePreviewStr = newIndex.toString();
+  }
 </script>
 
 <div class="font-semibold">{result.prefabName}</div>
@@ -260,11 +284,38 @@
 <Separator class="my-4" />
 
 <div class="font-semibold">Prefab Info</div>
-<div class="flex flex-wrap items-center gap-2">
-  <canvas
-    class="h-full max-h-32 max-w-48 bg-transparent"
-    use:drawGenerationOnCanvas={{ rectImage, frameIndex: 0 }}
-  ></canvas>
+<div class="flex flex-wrap items-start gap-2">
+  <div class="h-full flex flex-col items-center gap-2">
+    {#key currentFramePreviewRects}
+      <canvas
+        class="h-full max-h-32 max-w-48 bg-transparent"
+        use:drawGenerationOnCanvas={currentFramePreviewRects}
+      ></canvas>
+    {/key}
+    {#if rectImage.frames.length > 1}
+      <div class="flex gap-1">
+        <Button 
+          variant="outline"
+          size="icon"
+          class="h-8 w-8 cursor-pointer"
+          disabled={currentFramePreviewIndex <= 0}
+          onclick={() => advanceFrameIndex(-1)}
+        >
+          <ChevronLeft />
+        </Button>
+        <Input bind:value={currentFramePreviewStr} class="text-sm w-12 h-8 px-2 text-center" inputmode="numeric" min="0" max={rectImage.frames.length - 1} />
+        <Button 
+          variant="outline"
+          size="icon" 
+          class="h-8 w-8 cursor-pointer"
+          disabled={currentFramePreviewIndex >= rectImage.frames.length - 1}
+          onclick={() => advanceFrameIndex(1)}
+        >
+          <ChevronRight />
+        </Button>
+      </div>
+    {/if}
+  </div>
 
   <table class="text-sm text-muted-foreground">
     <tbody>
