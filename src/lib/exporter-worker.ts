@@ -333,15 +333,12 @@ function drawImage(image: RectImage, scaleFactor: number = 4): { data: Uint8Arra
   // clear canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // disable image smoothing
-  ctx.imageSmoothingEnabled = false;
-
   // draw each rect
   for (const rect of image.frames[0].rects) {
-    const x = Math.floor(rect.x * scaleFactor);
-    const y = Math.floor(rect.y * scaleFactor);
-    const width = Math.floor(rect.width * scaleFactor);
-    const height = Math.floor(rect.height * scaleFactor);
+    const x = rect.x * scaleFactor;
+    const y = rect.y * scaleFactor;
+    const width = rect.width * scaleFactor;
+    const height = rect.height * scaleFactor;
 
     if (width <= 0 || height <= 0) {
       continue;
