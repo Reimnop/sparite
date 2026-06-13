@@ -6,5 +6,8 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ["brotli-wasm"]
   },
+  worker: {
+    format: "es"
+  },
   plugins: [tailwindcss(), sveltekit()] 
 });
