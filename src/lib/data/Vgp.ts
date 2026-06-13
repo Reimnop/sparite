@@ -1,4 +1,5 @@
 export interface Prefab {
+  pa_prefab_png_ver?: 1;
   n?: string;
   description?: string;
   type?: number;

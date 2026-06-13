@@ -1,27 +1,25 @@
 <script lang="ts">
   import { getColorHex, type ColorRgb } from "$lib/algo/Color";
   import type { ColoredRect } from "$lib/algo/Rect";
-  import type { RectImage, RectImageFrame } from "$lib/algo/RectImage";
-  import { createPrefab, type PrefabRect } from "$lib/algo/VgpExport";
-  import { Alignment } from "$lib/types";
+  import { determineObjectCount } from "$lib/algo/RectImage";
   import Button from "$lib/components/ui/button/button.svelte";
   import Separator from "$lib/components/ui/separator/separator.svelte";
+  import { Spinner } from "$lib/components/ui/spinner";
+  import * as Dialog from "$lib/components/ui/dialog/index.js";
   import { SortableList, sortItems } from "@rodrigodagostino/svelte-sortable-list";
   import { onMount } from "svelte";
   import type { GenerationResult } from "$lib/types/GenerationResult";
   import { toast } from "svelte-sonner";
   import { Input } from "$lib/components/ui/input";
+  import type { ExportResult } from "$lib/types/ExportResult";
+  import ExportResultView from "./ExportResultView.svelte";
   import { SvelteMap } from "svelte/reactivity";
+  import ExporterWorker from "$lib/exporter-worker.ts?worker";
 
   import NoColor from "$lib/icons/no-color.svg";
   import Copy from "@lucide/svelte/icons/copy";
   import ChevronLeft from "@lucide/svelte/icons/chevron-left";
-  import ChevronRight from "@lucide/svelte/icons/chevron-right";
-
-  interface ThemeColor {
-    index: number;
-    color: ColorRgb | null;
-  }
+  import ChevronRight from "@lucide/svelte/icons/chevron-right";  
 
   interface Props {
     result: GenerationResult;
@@ -34,13 +32,17 @@
   let rectImage = $derived(result.rectImage);
   let objectCount = $derived(determineObjectCount(rectImage.frames));
 
-  let colors: ThemeColor[] = $state([]);
+  let colors: [(ColorRgb | null), number][] = $state([]);
 
   let previewWidth = $derived(rectImage.width);
   let previewHeight = $derived(rectImage.height);
   
   let currentFramePreviewIndex = $state(0);
   let currentFramePreviewRects = $derived(rectImage.frames[currentFramePreviewIndex].rects);
+
+  let exportResult: ExportResult | null = $state(null);
+  let resultDialogOpen: boolean = $state(false);
+  let isExporting: boolean = $state(false);
 
   $effect(() => {
     const parsed = parseInt(currentFramePreviewStr, 10);
@@ -52,19 +54,31 @@
   onMount(() => {
     let i = 0;
     for (; i < rectImage.palette.length; i++) {
-      colors.push({ index: i, color: rectImage.palette[i] });
+      colors.push([rectImage.palette[i], i]);
     }
     for (; i < 9; i++) {
-      colors.push({ index: i, color: null });
+      colors.push([null, i]);
     }
   });
 
+  function onExportButtonClicked() {
+    const colorIndexMap = getColorIndexMap();
+    const worker = new ExporterWorker();
+    worker.onmessage = (event: MessageEvent) => {
+      exportResult = event.data as ExportResult;
+      resultDialogOpen = true;
+      isExporting = false;
+    };
+    const resultSnapshot = $state.snapshot(result);
+    worker.postMessage({ result: resultSnapshot, colorIndexMap });
+    isExporting = true;
+  }
+
   function drawGenerationOnCanvas(
     canvas: HTMLCanvasElement,
-    rects: ColoredRect[]
+    rects: ColoredRect[],
+    scaleFactor: number = 4
   ) {
-    const scaleFactor = 4; // scale up for better visibility
-
     canvas.width = previewWidth * scaleFactor;
     canvas.height = previewHeight * scaleFactor;
 
@@ -90,166 +104,6 @@
     }
   }
 
-  function onDownloadButtonClicked() {
-    const colorIndexMap = getColorIndexMap();
-
-    // allocate prefab rects
-    const prefabRects: PrefabRect[] = [];
-    for (let i = 0; i < objectCount; i++) {
-      prefabRects.push({
-        positions: [],
-        sizes: [],
-        colors: []
-      });
-    }
-
-    // loop through every frame
-    let time = 0,
-      currentFrameIndex = 0;
-    while (time < result.lifetime) {
-      const coloredRects = postProcessRectImageFrame(
-        rectImage,
-        currentFrameIndex,
-        result.pixelsPerUnit,
-        result.horizontalAlignment,
-        result.verticalAlignment,
-        colorIndexMap
-      );
-
-      // push keyframes to prefab rects
-      let j = 0;
-      for (; j < coloredRects.length; j++) {
-        const rect = coloredRects[j];
-        prefabRects[j].positions.push({ time, value: [rect.x, rect.y] });
-        prefabRects[j].sizes.push({ time, value: [rect.width, rect.height] });
-        prefabRects[j].colors.push({ time, value: rect.color });
-      }
-
-      // hide remaining objects
-      for (; j < prefabRects.length; j++) {
-        prefabRects[j].positions.push({ time, value: [0, 0] });
-        prefabRects[j].sizes.push({ time, value: [0, 0] });
-        prefabRects[j].colors.push({ time, value: { index: 0, opacity: 0 } });
-      }
-
-      time += rectImage.frames[currentFrameIndex].delay / 1000;
-
-      // advance frame index
-      currentFrameIndex++;
-      if (currentFrameIndex >= rectImage.frames.length) {
-        if (!result.looped) {
-          break;
-        }
-        currentFrameIndex = 0;
-      }
-    }
-
-    const filename = `${normalizeFileName(result.prefabName)}.vgp`;
-    const prefab = createPrefab(
-      result.prefabName,
-      result.prefabDescription,
-      result.prefabType,
-      result.lifetime,
-      result.depth,
-      result.useHitObjects,
-      prefabRects,
-      Date.now()
-    );
-    const prefabJson = JSON.stringify(prefab, (key, value) => {
-      if (typeof value === "number") {
-        return Math.round(value * 10000) / 10000; // round to 4 decimal places
-      }
-      return value;
-    });
-    const textEncoder = new TextEncoder();
-    const prefabData = textEncoder.encode(prefabJson);
-    downloadData([prefabData], filename, "application/octet-stream");
-  }
-
-  function postProcessRectImageFrame(
-    rectImage: RectImage,
-    frameIndex: number,
-    pixelsPerUnit: number,
-    horizontalAlignment: Alignment,
-    verticalAlignment: Alignment,
-    colorMap: Map<number, number>
-  ): ColoredRect[] {
-    const scaleFactor = 1 / pixelsPerUnit; // the generator assumes 1 ppu, so scale accordingly
-    const offsetX = computeXOffset(rectImage.width * scaleFactor, horizontalAlignment);
-    const offsetY = computeYOffset(rectImage.height * scaleFactor, verticalAlignment);
-
-    const frame = rectImage.frames[frameIndex];
-
-    const result = frame.rects.map((rect) => {
-      let mappedIndex = colorMap.get(rect.color.index);
-      if (mappedIndex === undefined) {
-        mappedIndex = rect.color.index;
-      }
-      return {
-        x: rect.x * scaleFactor + offsetX,
-        y: rect.y * scaleFactor + offsetY,
-        width: rect.width * scaleFactor,
-        height: rect.height * scaleFactor,
-        color: {
-          index: mappedIndex,
-          opacity: rect.color.opacity
-        }
-      };
-    });
-
-    return result;
-  }
-
-  function computeXOffset(width: number, horizontalAlignment: Alignment) {
-    if (horizontalAlignment === Alignment.Left) {
-      return 0;
-    }
-    if (horizontalAlignment === Alignment.Center) {
-      return -width / 2;
-    }
-    return -width;
-  }
-
-  function computeYOffset(height: number, verticalAlignment: Alignment) {
-    if (verticalAlignment === Alignment.Top) {
-      return 0;
-    }
-    if (verticalAlignment === Alignment.Middle) {
-      return -height / 2;
-    }
-    return -height;
-  }
-
-  function getColorIndexMap(): Map<number, number> {
-    const colorIndexMap: Map<number, number> = new SvelteMap();
-    for (let i = 0; i < colors.length; i++) {
-      const currentThemeColor = colors[i];
-      if (currentThemeColor) {
-        colorIndexMap.set(currentThemeColor.index, i);
-      }
-    }
-    return colorIndexMap;
-  }
-
-  function normalizeFileName(name: string): string {
-    // convert all non-alphanumeric characters to underscores
-    return name.replace(/[^a-zA-Z0-9]/gi, "_").toLowerCase();
-  }
-
-  function downloadData(data: BlobPart[], filename: string, mimeType: string) {
-    const blob = new Blob(data, { type: mimeType });
-    const url = URL.createObjectURL(blob);
-
-    try {
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      a.click();
-    } finally {
-      URL.revokeObjectURL(url);
-    }
-  }
-
   function copyToClipboard(text: string) {
     navigator.clipboard.writeText(text);
     toast(`Copied ${text} to clipboard!`);
@@ -266,8 +120,15 @@
     }
   }
 
-  function determineObjectCount(frames: RectImageFrame[]): number {
-    return Math.max(...frames.map((frame) => frame.rects.length));
+  function getColorIndexMap(): Map<number, number> {
+    const colorIndexMap = new SvelteMap<number, number>();
+    for (let i = 0; i < colors.length; i++) {
+      const [color, index] = colors[i];
+      if (color) {
+        colorIndexMap.set(index, i);
+      }
+    }
+    return colorIndexMap;
   }
 
   function advanceFrameIndex(offset: number) {
@@ -365,34 +226,34 @@
 
 <div class="grid grid-cols-[min-content_minmax(0,1fr)] gap-3.5">
   <div class="grid gap-3">
-    {#each colors as color, i (color.index)}
-      <div class="flex h-12 items-center justify-center font-mono">{i + 1}</div>
+    {#each colors as [color, i], li (color ? getColorHex(color) : `null-${i}`)}
+      <div class="flex h-12 items-center justify-center font-mono">{li + 1}</div>
     {/each}
   </div>
   <SortableList.Root ondragend={handleDragEnd}>
-    {#each colors as color, i (String(color.index))}
+    {#each colors as [color, i], li (color ? getColorHex(color) : `null-${i}`)}
       <SortableList.Item
         class="flex h-12 items-center justify-between rounded-md border border-border bg-muted data-[is-ghost=false]:data-[drag-state*='ptr']:opacity-0"
-        id={String(color.index)}
-        index={i}
+        id={color ? getColorHex(color) : `null-${i}`}
+        index={li}
       >
         <div class="flex items-center gap-2.5 pl-3">
-          {#if color.color}
+          {#if color}
             <div
               class="size-6 rounded-sm"
-              style="background-color: {getColorHex(color.color)};"
+              style="background-color: {getColorHex(color)};"
             ></div>
-            <span class="font-mono">{getColorHex(color.color)}</span>
+            <span class="font-mono">{getColorHex(color)}</span>
           {:else}
             <img class="size-6 rounded-sm" src={NoColor} alt="No color" />
             <span>No color</span>
           {/if}
         </div>
         <div class="flex items-center">
-          {#if color.color}
+          {#if color}
             <button
               class="cursor-pointer rounded-sm border border-border bg-card p-2 transition-colors hover:bg-card/50"
-              onclick={() => copyToClipboard(getColorHex(color.color!))}
+              onclick={() => copyToClipboard(getColorHex(color))}
             >
               <Copy class="size-4" />
             </button>
@@ -406,6 +267,25 @@
 
 <Separator class="my-4" />
 
-<Button class="w-full cursor-pointer" onclick={onDownloadButtonClicked}>
-  Export &amp; Download Prefab
+<Button class="w-full cursor-pointer" onclick={onExportButtonClicked} disabled={isExporting}>
+  {#if isExporting}
+    <div class="flex items-center gap-2">
+      <Spinner class="mx-auto" />
+      Exporting...
+    </div>
+  {:else}
+    Export prefab
+  {/if}
 </Button>
+
+<Dialog.Root bind:open={resultDialogOpen}>
+  <Dialog.Content class="sm:max-w-xl">
+    <Dialog.Header>
+      <Dialog.Title>Your prefab is ready!</Dialog.Title>
+    </Dialog.Header>
+
+    {#if exportResult !== null}
+      <ExportResultView result={exportResult} />
+    {/if}
+  </Dialog.Content>
+</Dialog.Root>

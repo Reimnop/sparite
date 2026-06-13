@@ -12,3 +12,7 @@ export interface RectImage {
   frames: RectImageFrame[];
   palette: ColorRgb[];
 }
+
+export function determineObjectCount(frames: RectImageFrame[]): number {
+  return Math.max(...frames.map((frame) => frame.rects.length));
+}
